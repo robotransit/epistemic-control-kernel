@@ -1,7 +1,8 @@
 [project]
 name = "eba-core"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Enhanced BabyAGI: A perceptually self-regulating autonomous agent with predictive foresight and drift detection"
+keywords = ["agent", "agi", "autonomous", "babyagi"]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
