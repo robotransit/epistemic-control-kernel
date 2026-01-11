@@ -71,7 +71,10 @@ class EBACoreAgent:
         )
 
         # 2. Execute the task using the execution seam
-        outcome = execute_task(task_text, self.llm)  # TODO: add use_tools=self.config.use_tools when implemented
+        outcome = execute_task(
+            task_text=task_text,
+            llm_call=self.llm,
+        )
 
         # 3. Critic evaluation
         success, feedback, error = critic_evaluate(
