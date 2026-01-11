@@ -5,7 +5,7 @@ Enhanced BabyAGI: A perceptually self-regulating autonomous agent with predictiv
 EBA Core is an early-stage, framework-agnostic reliability kernel for autonomous agents.  
 It focuses on explicit prediction–execution–evaluation loops, conservative defaults, and first-class drift handling.
 
-# Current Status (v0.1.x)
+## Current Status (v0.1.x)
 
 Implemented & stable components:
 - Agent loop orchestration (agent.py)
@@ -25,7 +25,7 @@ Designed / Planned (not yet implemented):
 
 The focus right now is on reliability first: explicit phases, no silent hallucinations, clear halting conditions, and modular seams for future extensions.
 
-# Architecture Overview
+## Architecture Overview
 
 EBA Core separates cognition from execution:
 
@@ -41,7 +41,7 @@ Stateful control & safety layer:
 
 This design allows EBA Core to plug into any LLM stack (raw APIs, LangChain, LangGraph, etc.) without coupling to a specific framework.
 
-# Quick Start
+## Quick Start
 
 EBA Core requires you to supply your own LLM callable (e.g. OpenAI, Groq, local model).
 
@@ -62,8 +62,16 @@ agent.seed()  # Starts with an initial task (or generate one automatically)
 agent.run()   # Runs until halt or max iterations
 ```
 See examples/ for progressively richer integrations (coming soon).
+### How to Run (Local / Minimal Setup)
 
-# Project Structure
+```
+git clone https://github.com/robotransit/eba-core.git
+cd eba-core
+pip install -e .
+```
+Then run your own script using the stub example above.
+
+## Project Structure
 
 - eba/ — core package with modules:
   - agent.py → main loop orchestration
@@ -82,6 +90,12 @@ See examples/ for progressively richer integrations (coming soon).
 
 Note: EBA Core does not deduplicate tasks by text (allows repetition if desired).
 
-# License
+## Dependencies
+
+EBA Core currently has minimal runtime dependencies.
+
+Note: Additional dependencies may be introduced in future releases to support embeddings, tool execution, or external memory backends.
+
+## License
 
 MIT License — see the LICENSE file for details.
