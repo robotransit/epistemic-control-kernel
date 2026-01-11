@@ -1,5 +1,5 @@
-"```"
-"python"
+```
+python
 import logging
 from typing import Callable, List
 
@@ -13,7 +13,6 @@ from .prompts import (
     INITIAL_TASK_PROMPT_TEMPLATE,
     SUBTASK_GENERATION_PROMPT,
     PREDICTION_PROMPT_TEMPLATE,
-    CRITIC_EVALUATION_PROMPT,
     GOAL_ACHIEVED_PROMPT,
 )
 from .critic import critic_evaluate
@@ -43,6 +42,14 @@ class EBACoreAgent:
 
         self.cycles: int = 0
 
+    def execute_task(self, task_text: str) -> str:
+        """
+        Execute a task using the LLM (placeholder for future tool integration).
+
+        Execution is deterministic only to the extent the LLM is (temperature/sampling).
+        """
+        return self.llm(task_text).strip()
+
     def seed(self, initial_task: str = None) -> None:
         """Start with an initial task (or generate one if none provided)."""
         if initial_task is None:
@@ -68,7 +75,7 @@ class EBACoreAgent:
         prediction = self.llm(pred_prompt).strip()
 
         # 2. Execute the task
-        outcome = self.llm(task_text).strip()  # TODO: Replace with real tool executor
+        outcome = self.execute_task(task_text)
 
         # 3. Critic evaluation
         success, feedback, error = critic_evaluate(
@@ -111,6 +118,8 @@ class EBACoreAgent:
         sub_response = self.llm(sub_prompt).strip()
         subtasks = safe_parse_json_array(sub_response)  # Safe: empty list on parse failure
 
+        logger.info(f"Generated {len(subtasks)} subtasks")
+
         for sub in subtasks:
             self.queue.push({"id": generate_id(), "text": sub})
 
@@ -131,4 +140,4 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
-"```"
+```
