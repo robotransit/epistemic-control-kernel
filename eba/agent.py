@@ -1,21 +1,21 @@
-```
-python
+"```"
+"python"
 import logging
 from typing import Callable, List
 
 from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
-from .utils import generate_id, safe_parse_json_array, is_numeric_feasible
+from .utils import generate_id, is_numeric_feasible
 from .config import EBACoreConfig
 from .prompts import (
     format_prompt,
     INITIAL_TASK_PROMPT_TEMPLATE,
-    SUBTASK_GENERATION_PROMPT,
-    PREDICTION_PROMPT_TEMPLATE,
     GOAL_ACHIEVED_PROMPT,
 )
 from .critic import critic_evaluate
+from .prediction import generate_prediction
+from .task_generation import generate_subtasks
 
 logger = logging.getLogger("eba-core")
 
@@ -71,8 +71,11 @@ class EBACoreAgent:
         task_text = task["text"]
 
         # 1. Predict expected outcome
-        pred_prompt = format_prompt(PREDICTION_PROMPT_TEMPLATE, objective=self.objective, task_text=task_text)
-        prediction = self.llm(pred_prompt).strip()
+        prediction = generate_prediction(
+            task_text=task_text,
+            objective=self.objective,
+            llm_call=self.llm,
+        )
 
         # 2. Execute the task
         outcome = self.execute_task(task_text)
@@ -114,9 +117,13 @@ class EBACoreAgent:
             return False
 
         # 6. Generate subtasks with safe parsing
-        sub_prompt = format_prompt(SUBTASK_GENERATION_PROMPT, objective=self.objective, current_task=task_text)
-        sub_response = self.llm(sub_prompt).strip()
-        subtasks = safe_parse_json_array(sub_response)  # Safe: empty list on parse failure
+        # TODO: Move max_subtasks to config (e.g. config.max_subtasks_per_step)
+        subtasks = generate_subtasks(
+            current_task=task_text,
+            objective=self.objective,
+            llm_call=self.llm,
+            max_subtasks=5,
+        )
 
         logger.info(f"Generated {len(subtasks)} subtasks")
 
@@ -140,4 +147,4 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
-```
+"```"
