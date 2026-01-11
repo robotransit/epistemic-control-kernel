@@ -67,9 +67,9 @@ run_eba(objective, max_iterations=50)
 MIT License — see the [LICENSE](LICENSE) file for details.
 
 
-(# eba-core)
+# eba-core
 This is a test header
-(- This is a test bullet)
+- This is a test bullet
 This is plain text line
 ""python print"Hello, world!" ""
 
