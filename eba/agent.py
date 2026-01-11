@@ -1,107 +1,134 @@
-```
-python
+"```"
+"python"
 import logging
-from typing import Callable, Dict, List, Optionalfrom .queue import TaskQueue
+from typing import Callable, List
+
+from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
-from .utils import generate_id
-from .config import EBACoreConfiglogger = logging.getLogger("eba-core")class EBACoreAgent:
+from .utils import generate_id, safe_parse_json_array, is_numeric_feasible
+from .config import EBACoreConfig
+from .prompts import (
+    format_prompt,
+    INITIAL_TASK_PROMPT_TEMPLATE,
+    SUBTASK_GENERATION_PROMPT,
+    PREDICTION_PROMPT_TEMPLATE,
+    CRITIC_EVALUATION_PROMPT,
+    GOAL_ACHIEVED_PROMPT,
+)
+from .critic import critic_evaluate
+
+logger = logging.getLogger("eba-core")
+
+
+class EBACoreAgent:
     """
-    Framework-agnostic core of Enhanced BabyAGI (EBA).Orchestrates task queue, memory, drift monitoring, and LLM calls.
-"""
-
-def __init__(
-    self,
-    objective: str,
-    predict_fn: Callable[[str], str],
-    execute_fn: Callable[[str], str],
-    critic_fn: Callable[[str, str, str, str], tuple[bool, str, float]],
-    task_generator_fn: Callable[[str, str], List[str]],
-    config: EBACoreConfig,
-):
+    Framework-agnostic core of Enhanced BabyAGI (EBA).
+    Orchestrates task queue, memory, drift monitoring, and LLM calls.
     """
-    Initialize the EBA agent.
 
-    Args:
-        objective: The overall goal string.
-        predict_fn: Function that generates prediction for a task (str -> str).
-        execute_fn: Function that executes a task (str -> str).
-        critic_fn: Function that evaluates result (task, pred, outcome, objective -> success, feedback, error).
-        task_generator_fn: Function that generates subtasks (current_task, objective -> list[str]).
-        config: Configuration object with all thresholds and limits.
-    """
-    self.objective = objective
-    self.predict = predict_fn
-    self.execute = execute_fn
-    self.critic = critic_fn
-    self.task_gen = task_generator_fn
-    self.config = config
+    def __init__(
+        self,
+        objective: str,
+        llm_call: Callable[[str], str],  # Single LLM function for all prompts
+        config: EBACoreConfig = None,
+    ):
+        self.objective = objective
+        self.llm = llm_call
+        self.config = config or EBACoreConfig()
 
-    self.queue = TaskQueue(max_size=config.max_queue_size)
-    self.memory = WorldModel()
-    self.drift = DriftMonitor(config=config)  # Pass config for shared thresholds
+        self.queue = TaskQueue(max_size=self.config.max_queue_size)
+        self.memory = WorldModel()
+        self.drift = DriftMonitor(config=self.config)
 
-    self.cycles: int = 0
+        self.cycles: int = 0
 
-def seed(self, initial_task: str) -> None:
-    """Seed the queue with the very first task."""
-    task = {"id": generate_id(), "text": initial_task}
-    self.queue.push(task)
-    logger.info(f"Seeded initial task: {initial_task}")
+    def seed(self, initial_task: str = None) -> None:
+        """Start with an initial task (or generate one if none provided)."""
+        if initial_task is None:
+            prompt = format_prompt(INITIAL_TASK_PROMPT_TEMPLATE, objective=self.objective)
+            initial_task = self.llm(prompt).strip()
 
-def step(self) -> bool:
-    """Execute one cycle of the agent loop. Returns False if queue empty or halt triggered."""
-    task = self.queue.pop()
-    if not task:
-        logger.info("Queue empty — nothing to do")
-        return False
+        task = {"id": generate_id(), "text": initial_task}
+        self.queue.push(task)
+        logger.info(f"Agent seeded with initial task: {initial_task}")
 
-    task_id = task["id"]
-    text = task["text"]
+    def step(self) -> bool:
+        """Execute one full cycle of the agent loop."""
+        task = self.queue.pop()
+        if not task:
+            logger.info("Task queue empty — nothing to do this cycle")
+            return False
 
-    prediction = self.predict(text)
-    outcome = self.execute(text)
-    success, feedback, error = self.critic(text, prediction, outcome, self.objective)
+        task_id = task["id"]
+        task_text = task["text"]
 
-    self.memory.record(task_id, text, prediction, outcome, success, feedback)
+        # 1. Predict expected outcome
+        pred_prompt = format_prompt(PREDICTION_PROMPT_TEMPLATE, objective=self.objective, task_text=task_text)
+        prediction = self.llm(pred_prompt).strip()
 
-    # Drift checks
-    perceptual_drift = self.drift.record_error(error)
-    self.drift.record_feasibility(feasible=True, success=success)  # TODO: real feasible check
+        # 2. Execute the task
+        outcome = self.llm(task_text).strip()  # TODO: Replace with real tool executor
 
-    if perceptual_drift:
-        logger.warning(f"Perceptual drift detected on task {task_id}")
-        self.drift.register_drift()
-    else:
-        self.drift.clear_streak()
+        # 3. Critic evaluation
+        success, feedback, error = critic_evaluate(
+            task_text=task_text,
+            prediction=prediction,
+            result=outcome,
+            objective=self.objective,
+            llm_call=self.llm,
+        )
 
-    if self.drift.drift_streak > self.config.max_drift_streak:
-        logger.critical("Repeated drift streaks — halting agent")
-        return False
+        # Record everything
+        self.memory.record(task_id, task_text, prediction, outcome, success, feedback)
 
-    # Generate and push subtasks
-    subtasks = self.task_gen(text, self.objective)
-    for sub in subtasks:
-        self.queue.push({"id": generate_id(), "text": sub})
+        # 4. Drift checks
+        perceptual_drift = self.drift.record_error(error)
 
-    self.cycles += 1
+        # Real numeric feasibility check
+        was_numeric = is_numeric_feasible(prediction, outcome)
+        self.drift.record_feasibility(was_numeric, success)
 
-    # Periodic guard check
-    if self.cycles % self.config.guard_interval == 0:
-        if self.drift.severe():
-            logger.error("Severe instability detected — performing partial reset")
-            self.drift = DriftMonitor(config=self.config)  # Reset drift monitor
+        if perceptual_drift:
+            logger.warning(f"Perceptual drift detected on task {task_id}")
+            self.drift.register_drift()
+        else:
+            self.drift.clear_streak()
 
-    return True
+        if self.drift.drift_streak > self.config.max_drift_streak:
+            logger.critical("Repeated drift streaks detected — halting agent")
+            return False
 
-def run(self) -> None:
-    """Run the agent until queue empty, halt, or max iterations reached."""
-    logger.info(f"Starting EBA run with objective: {self.objective}")
-    while self.cycles < self.config.max_iterations:
-        if not self.step():
-            break
-    logger.info(f"EBA run completed after {self.cycles} cycles")
-  
-```
+        # 5. Check if goal achieved
+        goal_prompt = format_prompt(GOAL_ACHIEVED_PROMPT, objective=self.objective, result=outcome)
+        goal_response = self.llm(goal_prompt).strip()
+        if "YES" in goal_response.upper():
+            logger.info("Goal achieved — stopping early")
+            return False
 
+        # 6. Generate subtasks with safe parsing
+        sub_prompt = format_prompt(SUBTASK_GENERATION_PROMPT, objective=self.objective, current_task=task_text)
+        sub_response = self.llm(sub_prompt).strip()
+        subtasks = safe_parse_json_array(sub_response)  # Safe: empty list on parse failure
 
+        for sub in subtasks:
+            self.queue.push({"id": generate_id(), "text": sub})
+
+        self.cycles += 1
+
+        # 7. Periodic guard check
+        if self.cycles % self.config.guard_interval == 0:
+            if self.drift.severe():
+                logger.error("Severe instability detected — performing partial reset")
+                self.drift = DriftMonitor(config=self.config)
+
+        return True
+
+    def run(self) -> None:
+        """Run the agent until halt condition or max iterations reached."""
+        logger.info(f"Starting EBA run with objective: {self.objective}")
+        while self.cycles < self.config.max_iterations:
+            if not self.step():
+                break
+        logger.info(f"EBA run completed after {self.cycles} cycles")
+"```"
