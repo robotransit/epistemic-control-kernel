@@ -1,7 +1,7 @@
-"```"
-"python"
+```
+python
 import logging
-from typing import Callable, List
+from typing import Callable
 
 from .queue import TaskQueue
 from .memory import WorldModel
@@ -16,6 +16,7 @@ from .prompts import (
 from .critic import critic_evaluate
 from .prediction import generate_prediction
 from .task_generation import generate_subtasks
+from .execution import execute_task
 
 logger = logging.getLogger("eba-core")
 
@@ -41,14 +42,6 @@ class EBACoreAgent:
         self.drift = DriftMonitor(config=self.config)
 
         self.cycles: int = 0
-
-    def execute_task(self, task_text: str) -> str:
-        """
-        Execute a task using the LLM (placeholder for future tool integration).
-
-        Execution is deterministic only to the extent the LLM is (temperature/sampling).
-        """
-        return self.llm(task_text).strip()
 
     def seed(self, initial_task: str = None) -> None:
         """Start with an initial task (or generate one if none provided)."""
@@ -77,8 +70,8 @@ class EBACoreAgent:
             llm_call=self.llm,
         )
 
-        # 2. Execute the task
-        outcome = self.execute_task(task_text)
+        # 2. Execute the task using the execution seam
+        outcome = execute_task(task_text, self.llm)  # TODO: add use_tools=self.config.use_tools when implemented
 
         # 3. Critic evaluation
         success, feedback, error = critic_evaluate(
@@ -147,4 +140,4 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
-"```"
+```
