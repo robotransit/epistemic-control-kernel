@@ -1,35 +1,69 @@
 ```
 python
 from typing import Callable
+import re
+import ast
+import operator
+
+_ALLOWED_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+}
+
+def _safe_eval(expr: str) -> float:
+    """Safely evaluate a simple arithmetic expression using ast."""
+    try:
+        node = ast.parse(expr.strip(), mode="eval")
+        if not isinstance(node.body, ast.Expression):
+            raise ValueError("Invalid expression")
+
+        def _eval(n):
+            if isinstance(n, ast.Constant) and isinstance(n.value, (int, float)):
+                return n.value
+            if isinstance(n, ast.BinOp):
+                op_type = type(n.op)
+                if op_type not in _ALLOWED_OPERATORS:
+                    raise ValueError(f"Operator {op_type.__name__} not allowed")
+                left = _eval(n.left)
+                right = _eval(n.right)
+                return _ALLOWED_OPERATORS[op_type](left, right)
+            raise ValueError("Unsupported expression node")
+        
+        return _eval(node.body)
+    except Exception as e:
+        raise ValueError(f"Safe evaluation failed: {e}")
 
 def execute_task(
     task_text: str,
     llm_call: Callable[[str], str],
-    use_tools: bool = False,  # Future flag for tool mode
+    use_tools: bool = False,
 ) -> str:
     """
     Execute a task and return the outcome string.
 
     This is the main execution seam for EBA Core.
-    Currently uses direct LLM call (placeholder for real tool integration).
-
-    Args:
-        task_text: The task description to execute.
-        llm_call: Callable that takes a prompt and returns the LLM response.
-        use_tools: Flag to indicate tool usage (not implemented yet).
-
-    Returns:
-        Cleaned outcome string (normalized whitespace).
+    Supports optional dummy calculator tool for seam validation.
     """
     if use_tools:
-        # Future: call tool executor (LangChain, custom tools, etc.)
-        raise NotImplementedError("Tool execution not yet implemented")
+        # Dummy tool: explicit calculator
+        match = re.search(r'^CALC:\s*(.+)$', task_text.strip(), re.IGNORECASE)
+        if match:
+            expr = match.group(1)
+            try:
+                result = _safe_eval(expr)
+                outcome = f"Calculation result: {result}"
+                # Normalize tool output too (symmetry with other modules)
+                outcome = ' '.join(outcome.split())
+            except Exception as e:
+                outcome = f"Calculation failed (invalid expression)"
+        else:
+            outcome = llm_call(task_text).strip()
+    else:
+        outcome = llm_call(task_text).strip()
 
-    # Default: direct LLM execution (placeholder)
-    raw_outcome = llm_call(task_text).strip()
-
-    # Normalize internal whitespace (collapse multiples, remove newlines/tabs)
-    outcome = ' '.join(raw_outcome.split())
-
-    return outcome
+    # Normalize internal whitespace (symmetry with prediction/task gen)
+    return ' '.join(outcome.split())
 ```
