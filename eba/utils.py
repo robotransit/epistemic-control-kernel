@@ -1,13 +1,12 @@
 ```
 python
-# utils.py
-# Shared helper functions for EBA (ID generation, statistics, similarity, parsing)
-
 import uuid
 import logging
 import math
 import json
-from typing import List, Any
+from typing import List, Any, Dict
+
+from .config import PolicyMode, EBACoreConfig
 
 logger = logging.getLogger("eba-core")
 
@@ -59,7 +58,6 @@ def safe_parse_json_array(response: str) -> List[str]:
         logger.warning(f"Subtask JSON parse failed: {e} - no subtasks generated")
         return []
 
-# Note: This is a heuristic compatibility check, not a correctness test.
 def is_numeric_feasible(prediction: Any, actual: Any, similarity_threshold: float = 0.8) -> bool:
     """
     Determine if prediction and actual outcome are numeric-feasible.
@@ -85,7 +83,6 @@ def is_numeric_feasible(prediction: Any, actual: Any, similarity_threshold: floa
         if len(pred_str) == 0 or len(act_str) == 0:
             return False
 
-        # Simple heuristic: length difference and basic content overlap
         length_diff = abs(len(pred_str) - len(act_str))
         if length_diff > 50:
             return False
@@ -97,4 +94,53 @@ def is_numeric_feasible(prediction: Any, actual: Any, similarity_threshold: floa
     except Exception as e:
         logger.debug(f"Numeric feasibility fallback failed: {e}")
         return False
+
+def score_memory_entry(
+    entry: Dict[str, Any],
+    current_task: str,
+    policy_mode: PolicyMode,
+    config: EBACoreConfig,
+) -> float:
+    """
+    Compute a scalar weight for a past task entry's relevance to the current task.
+
+    This is a pure scoring function — no side effects, no memory mutation.
+
+    Scoring factors:
+    - Semantic similarity (placeholder cosine sim)
+    - Outcome severity (failures weighted higher)
+    - Policy mode (CONSERVATIVE/HALT penalize low relevance)
+
+    Returns a float >= 0:
+    - 0 = ignore this entry
+    - Higher = more influence (for future context weighting)
+    """
+    # Placeholder similarity (future: replace with cosine_sim on embeddings)
+    similarity = 0.0  # Replace with actual sim computation
+    # For demo: simple string overlap
+    current_words = set(current_task.lower().split())
+    past_text = entry.get("task", "")  # Safe default if key missing
+    past_words = set(past_text.lower().split())
+    union = current_words | past_words
+    if not union:
+        similarity = 0.0
+    else:
+        intersection = current_words & past_words
+        similarity = len(intersection) / len(union)
+
+    # Outcome severity bonus/penalty
+    success = entry.get("success", False)
+    severity = 1.0 if success else 2.0  # TODO: move to config (failure_severity_weight)
+
+    # Policy mode multiplier (CONSERVATIVE/HALT penalize low relevance)
+    policy_multiplier = 1.0
+    if policy_mode == PolicyMode.CONSERVATIVE:
+        policy_multiplier = 0.8 if similarity < 0.8 else 1.0  # TODO: use config.memory_similarity_threshold
+    elif policy_mode == PolicyMode.HALT:
+        policy_multiplier = 0.0  # No memory influence in HALT
+
+    # Final score
+    score = similarity * severity * policy_multiplier
+
+    return max(0.0, score)  # Never negative
 ```
