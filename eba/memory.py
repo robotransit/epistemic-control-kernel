@@ -55,8 +55,7 @@ class WorldModel:
         """Retrieve data for a specific task by ID, or None if not found."""
         entry = self.tasks.get(task_id)
         if entry is not None:
-            # Serialize timestamp for output
-            entry = dict(entry)  # shallow copy
+            entry = dict(entry)
             entry["timestamp"] = entry["timestamp"].isoformat()
         return entry
 
@@ -68,7 +67,6 @@ class WorldModel:
             reverse=True
         )
         recent = sorted_tasks[:limit]
-        # Serialize timestamps for output
         return [dict(t, timestamp=t["timestamp"].isoformat()) for t in recent]
 
     def get_similar(
@@ -93,11 +91,36 @@ class WorldModel:
             if sim >= threshold:
                 similar.append(entry)
 
-        # Sort by timestamp descending
         similar.sort(key=lambda e: e["timestamp"], reverse=True)
         recent = similar[:limit]
-        # Serialize timestamps for output
         return [dict(t, timestamp=t["timestamp"].isoformat()) for t in recent]
+
+    def retrieve_similar(
+        self,
+        task_text: str,
+        *,
+        threshold: float = 0.7,
+        limit: int = 5,
+        prefer_failures: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve past tasks relevant to the current task_text.
+
+        Optionally bias toward failed outcomes (negative memory).
+        Deterministic ordering: failures first (when prefer_failures=True), then recency.
+
+        Not used anywhere yet — future consumer for prediction context.
+        """
+        candidates = self.get_similar(task_text, threshold=threshold, limit=limit * 2)  # fetch extra for filtering
+
+        if prefer_failures:
+            failed = [e for e in candidates if not e.get("success", False)]
+            succeeded = [e for e in candidates if e.get("success", False)]
+            prioritized = failed + succeeded
+        else:
+            prioritized = candidates
+
+        return prioritized[:limit]  # No re-serialization — upstream already handles it
 
     # Deprecated: use all_tasks() instead
     # def get_entries(self) -> Dict[str, Dict[str, Any]]:
