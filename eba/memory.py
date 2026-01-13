@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Dict, Optional, Any, List
 
 from .task import TaskState
+from .utils import score_memory_entry
+from .config import PolicyMode, EBACoreConfig
 
 class WorldModel:
     """
@@ -76,13 +78,13 @@ class WorldModel:
         limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """
-        Return tasks with cosine similarity above threshold to the given task_text.
+        Return tasks with similarity above threshold to the given task_text.
 
-        Placeholder similarity function — future: use real embeddings.
+        Placeholder similarity function (string overlap) — future: use real cosine sim on embeddings.
         """
         similar = []
         for entry in self.tasks.values():
-            past_text = entry["task"]
+            past_text = entry.get("task", "")  # Safe default if key missing
             union = set(task_text.split()) | set(past_text.split())
             if not union:
                 continue  # Avoid division by zero
@@ -111,7 +113,11 @@ class WorldModel:
 
         Not used anywhere yet — future consumer for prediction context.
         """
-        candidates = self.get_similar(task_text, threshold=threshold, limit=limit * 2)  # fetch extra for filtering
+        candidates = self.get_similar(
+            task_text,
+            threshold=threshold,
+            limit=limit * 2,  # Fetch extra for filtering/bias — future: configurable
+        )
 
         if prefer_failures:
             failed = [e for e in candidates if not e.get("success", False)]
@@ -121,6 +127,50 @@ class WorldModel:
             prioritized = candidates
 
         return prioritized[:limit]  # No re-serialization — upstream already handles it
+
+    def retrieve_scored(
+        self,
+        task_text: str,
+        policy_mode: PolicyMode,
+        config: EBACoreConfig,
+        *,
+        threshold: float = 0.7,
+        limit: int = 5,
+        prefer_failures: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve past tasks relevant to the current task_text with computed scores.
+
+        Scores are computed using score_memory_entry() and used for ranking.
+        Drops entries with score == 0.
+        Deterministic ordering: score DESC.
+
+        Not used anywhere yet — future consumer for prediction context.
+        """
+        candidates = self.retrieve_similar(
+            task_text=task_text,
+            threshold=threshold,
+            limit=limit * 2,
+            prefer_failures=prefer_failures,
+        )
+
+        # Score each entry
+        scored = []
+        for entry in candidates:
+            score = score_memory_entry(
+                entry=entry,
+                current_task=task_text,
+                policy_mode=policy_mode,
+                config=config,
+            )
+            if score > 0:
+                entry_with_score = dict(entry)  # shallow copy
+                entry_with_score["score"] = score
+                scored.append(entry_with_score)
+
+        # Sort by score descending
+        scored.sort(key=lambda e: e["score"], reverse=True)
+        return scored[:limit]
 
     # Deprecated: use all_tasks() instead
     # def get_entries(self) -> Dict[str, Dict[str, Any]]:
