@@ -1,48 +1,51 @@
 ```
 python
-from typing import Callable
+from typing import Callable, List, Dict, Any
 
 from .prompts import format_prompt, PREDICTION_PROMPT_TEMPLATE
+from .memory import WorldModel
+from .config import EBACoreConfig
 
-def generate_prediction(
+def build_prediction_context(
     task_text: str,
     objective: str,
-    llm_call: Callable[[str], str],
-    max_length: int = 200,
+    memory: WorldModel,
+    config: EBACoreConfig,
 ) -> str:
     """
-    Generate a concise prediction of the expected task outcome.
+    Build optional context from relevant past task outcomes for the prediction prompt.
 
-    This function is pure: it only formats the prompt and calls the LLM.
-    No side effects, no logging, no state changes.
+    This is read-only: retrieves past tasks but does not modify memory or state.
+    Disabled by default via config.enable_memory_retrieval.
 
-    Args:
-        task_text: The task description.
-        objective: The overall goal.
-        llm_call: Callable that takes a prompt and returns the LLM response.
-        max_length: Optional max characters for the prediction (truncates if exceeded).
-
-    Returns:
-        Cleaned prediction string (normalized whitespace, protected against empty output, truncated if needed).
+    Returns empty string when disabled or no relevant outcomes found.
     """
-    prompt = format_prompt(
-        PREDICTION_PROMPT_TEMPLATE,
-        objective=objective,
-        task_text=task_text
+    if not config.enable_memory_retrieval:
+        return ""
+
+    # Retrieve similar past tasks
+    similar = memory.retrieve_similar(
+        task_text=task_text,
+        threshold=config.memory_similarity_threshold,
+        limit=config.memory_retrieval_limit,
+        prefer_failures=config.prefer_negative_memory,
     )
 
-    raw_prediction = llm_call(prompt).strip()
+    if not similar:
+        return ""
 
-    # Normalize internal whitespace (collapse multiples, remove newlines/tabs)
-    raw_prediction = ' '.join(raw_prediction.split())
+    # Build concise context summary
+    context_lines = ["Relevant past outcomes:"]
+    for entry in similar:
+        task = entry.get("task", "")[:100]
+        state = entry.get("state", "unknown")
+        outcome = entry.get("outcome", "(no outcome)")[:100]
+        success = entry.get("success", False)
+        feedback = entry.get("feedback", "(no feedback)")[:100]
+        if len(feedback) == 100:
+            feedback += "..."
+        line = f"- Task: {task}... | State: {state} | Outcome: {outcome}... | Success: {success} | Feedback: {feedback}"
+        context_lines.append(line)
 
-    # Protect against empty/whitespace-only output
-    if not raw_prediction:
-        raw_prediction = "(no prediction generated)"
-
-    # Optional length constraint
-    if len(raw_prediction) > max_length:
-        raw_prediction = raw_prediction[:max_length].rstrip(" .,!?") + "..."
-
-    return raw_prediction
+    return "\n".join(context_lines)
 ```
