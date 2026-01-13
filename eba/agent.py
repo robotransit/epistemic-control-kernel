@@ -17,7 +17,7 @@ from .critic import critic_evaluate
 from .prediction import generate_prediction
 from .task_generation import generate_subtasks
 from .execution import execute_task
-from .task import TaskState  # For lifecycle states
+from .task import TaskState
 
 logger = logging.getLogger("eba-core")
 
@@ -72,6 +72,12 @@ class EBACoreAgent:
 
     def step(self) -> bool:
         """Execute one full cycle of the agent loop."""
+        # Early exit on HALT policy (drift-aware in future)
+        policy = self.config.effective_policy()
+        if policy.get("halt", False):
+            logger.critical("Policy mode: HALT - stopping agent")
+            return False
+
         task = self.queue.pop()
         if not task:
             logger.info("Task queue empty — nothing to do this cycle")
