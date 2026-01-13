@@ -46,11 +46,11 @@ class EBACoreConfig:
     _conservative_critic_strictness: float = 0.9
     _conservative_prediction_bias_delta: float = -0.2
 
-    def effective_policy(self) -> MappingProxyType:
+    def effective_policy(self) -> Mapping[str, object]:
         """
         Resolve effective parameters based on current policy mode.
 
-        Returns an immutable dict view with the following possible keys (all optional):
+        Returns an immutable mapping view with the following possible keys (all optional):
 
         - max_subtasks: int — maximum subtasks to generate per step
         - critic_strictness: float — higher values = stricter success threshold
