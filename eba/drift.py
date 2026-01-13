@@ -1,14 +1,11 @@
 ```
 python
-# drift.py
-# Multi-level drift detection and bias adaptation for EBA
-
 import statistics
 from collections import deque
 from typing import List
 
 from .utils import z_score, safe_mean
-from .config import EBACoreConfig
+from .config import EBACoreConfig, PolicyMode
 
 class DriftMonitor:
     """
@@ -20,13 +17,11 @@ class DriftMonitor:
     def __init__(self, config: EBACoreConfig = None):
         """
         Initialize drift monitor with configurable thresholds.
-
-        Args:
-            config: Optional EBACoreConfig for custom thresholds. Uses defaults if None.
         """
         self.config = config or EBACoreConfig()
 
         self.error_history: List[float] = []
+        self.last_error_z: float = 0.0  # Track latest z-score for policy decisions
         self.recent_drifts = deque(maxlen=20)
         self.drift_streak: int = 0
 
@@ -34,27 +29,23 @@ class DriftMonitor:
         self.numeric_bias: float = 1.0
 
     def record_error(self, error: float) -> bool:
-        """
-        Record a new perceptual error and check for z-score outlier.
-
-        Returns True if z-score indicates significant drift.
-        """
+        """Record a new perceptual error and check for z-score outlier."""
         self.error_history.append(error)
 
         if len(self.error_history) < 10:
+            self.last_error_z = 0.0
             return False
 
         recent = self.error_history[-10:]
         mean = statistics.mean(recent)
         std = statistics.pstdev(recent) or 1e-8
         z = abs(z_score(error, mean, std))
+        self.last_error_z = z  # Update latest z-score
 
         return z > self.config.error_z_threshold
 
     def record_feasibility(self, was_numeric: bool, success: bool) -> None:
-        """
-        Record feasibility result and update numeric bias dynamically.
-        """
+        """Record feasibility result and update numeric bias dynamically."""
         self.feasibility_history.append((was_numeric, success))
 
         numeric = [s for f, s in self.feasibility_history if f]
@@ -77,7 +68,7 @@ class DriftMonitor:
         self.drift_streak = 0
 
     def severe(self) -> bool:
-        """Check if drift situation is severe enough for reset."""
+        """Return True if conditions warrant immediate HALT."""
         if len(self.recent_drifts) > 3:
             return True
 
@@ -86,4 +77,28 @@ class DriftMonitor:
             return True
 
         return False
+
+    def get_policy_mode(self) -> PolicyMode:
+        """
+        Determine recommended policy mode based on current drift signals.
+
+        Uses public transition thresholds from config to decide mode.
+        Returns NORMAL by default, CONSERVATIVE on moderate signals, HALT on severe/repeated drift.
+        """
+        # HALT conditions (highest priority)
+        if (
+            self.severe()
+            or self.drift_streak >= self.config.halt_drift_streak
+            or self.last_error_z >= self.config.halt_error_z
+        ):
+            return PolicyMode.HALT
+
+        # CONSERVATIVE conditions
+        if (
+            self.drift_streak >= self.config.conservative_drift_streak
+            or self.last_error_z >= self.config.conservative_error_z
+        ):
+            return PolicyMode.CONSERVATIVE
+
+        return PolicyMode.NORMAL
 ```
