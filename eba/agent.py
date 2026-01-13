@@ -17,6 +17,7 @@ from .critic import critic_evaluate
 from .prediction import generate_prediction
 from .task_generation import generate_subtasks
 from .execution import execute_task
+from .task import TaskState  # For lifecycle states
 
 logger = logging.getLogger("eba-core")
 
@@ -43,14 +44,30 @@ class EBACoreAgent:
 
         self.cycles: int = 0
 
+    def _record_task_created(self, task_id: str, task_text: str) -> None:
+        """Helper to record CREATED state when task is enqueued."""
+        self.memory.record(
+            task_id=task_id,
+            task_text=task_text,
+            prediction="",
+            outcome="",
+            success=False,
+            feedback="",
+            state=TaskState.CREATED
+        )
+
     def seed(self, initial_task: str = None) -> None:
         """Start with an initial task (or generate one if none provided)."""
         if initial_task is None:
             prompt = format_prompt(INITIAL_TASK_PROMPT_TEMPLATE, objective=self.objective)
             initial_task = self.llm(prompt).strip()
 
-        task = {"id": generate_id(), "text": initial_task}
+        task_id = generate_id()
+        task = {"id": task_id, "text": initial_task}
         self.queue.push(task)
+
+        # Record CREATED state
+        self._record_task_created(task_id, initial_task)
         logger.info(f"Agent seeded with initial task: {initial_task}")
 
     def step(self) -> bool:
@@ -63,6 +80,17 @@ class EBACoreAgent:
         task_id = task["id"]
         task_text = task["text"]
 
+        # Record PREDICTED state
+        self.memory.record(
+            task_id=task_id,
+            task_text=task_text,
+            prediction="",
+            outcome="",
+            success=False,
+            feedback="",
+            state=TaskState.PREDICTED
+        )
+
         # 1. Predict expected outcome
         prediction = generate_prediction(
             task_text=task_text,
@@ -71,9 +99,17 @@ class EBACoreAgent:
         )
 
         # 2. Execute the task using the execution seam
-        outcome = execute_task(
+        outcome = execute_task(task_text, self.llm)
+
+        # Record EXECUTED state
+        self.memory.record(
+            task_id=task_id,
             task_text=task_text,
-            llm_call=self.llm,
+            prediction=prediction,
+            outcome=outcome,
+            success=False,  # Updated below after critic
+            feedback="",
+            state=TaskState.EXECUTED
         )
 
         # 3. Critic evaluation
@@ -85,8 +121,24 @@ class EBACoreAgent:
             llm_call=self.llm,
         )
 
-        # Record everything
-        self.memory.record(task_id, task_text, prediction, outcome, success, feedback)
+        # Final state after critic
+        if success:
+            final_state = TaskState.SUCCEEDED
+        elif feedback:  # non-empty feedback currently treated as critic rejection (future: distinguish caveats vs rejection)
+            final_state = TaskState.REJECTED_BY_CRITIC
+        else:
+            final_state = TaskState.FAILED
+
+        # Record final outcome
+        self.memory.record(
+            task_id=task_id,
+            task_text=task_text,
+            prediction=prediction,
+            outcome=outcome,
+            success=success,
+            feedback=feedback,
+            state=final_state
+        )
 
         # 4. Drift checks
         perceptual_drift = self.drift.record_error(error)
@@ -104,6 +156,8 @@ class EBACoreAgent:
         if self.drift.drift_streak > self.config.max_drift_streak:
             logger.critical("Repeated drift streaks detected — halting agent")
             return False
+
+        # TODO: record TaskState.DEFERRED when policy halts execution
 
         # 5. Check if goal achieved
         goal_prompt = format_prompt(GOAL_ACHIEVED_PROMPT, objective=self.objective, result=outcome)
@@ -124,7 +178,9 @@ class EBACoreAgent:
         logger.info(f"Generated {len(subtasks)} subtasks")
 
         for sub in subtasks:
-            self.queue.push({"id": generate_id(), "text": sub})
+            sub_id = generate_id()
+            self.queue.push({"id": sub_id, "text": sub})
+            self._record_task_created(sub_id, sub)  # Record CREATED for new subtasks
 
         self.cycles += 1
 
