@@ -1,6 +1,6 @@
 ```
 python
-from typing import Callable, List, Dict, Any
+from typing import Callable
 
 from .prompts import format_prompt, PREDICTION_PROMPT_TEMPLATE
 from .memory import WorldModel
@@ -23,7 +23,6 @@ def build_prediction_context(
     if not config.enable_memory_retrieval:
         return ""
 
-    # Retrieve similar past tasks
     similar = memory.retrieve_similar(
         task_text=task_text,
         threshold=config.memory_similarity_threshold,
@@ -34,7 +33,6 @@ def build_prediction_context(
     if not similar:
         return ""
 
-    # Build concise context summary
     context_lines = ["Relevant past outcomes:"]
     for entry in similar:
         task = entry.get("task", "")[:100]
@@ -48,4 +46,44 @@ def build_prediction_context(
         context_lines.append(line)
 
     return "\n".join(context_lines)
+
+
+def generate_prediction(
+    task_text: str,
+    objective: str,
+    llm_call: Callable[[str], str],
+    memory: WorldModel,
+    config: EBACoreConfig,
+    max_length: int = 200,
+) -> str:
+    """
+    Generate a concise prediction of the expected task outcome.
+
+    This function is pure: it formats the prompt, calls the LLM, and safely parses the result.
+    No side effects, no logging, no state changes.
+    """
+    # Build memory context (empty if disabled or no relevant outcomes)
+    memory_context = build_prediction_context(task_text, objective, memory, config)
+
+    prompt = format_prompt(
+        PREDICTION_PROMPT_TEMPLATE,
+        memory_context=memory_context,
+        objective=objective,
+        task_text=task_text
+    )
+
+    raw_prediction = llm_call(prompt).strip()
+
+    # Normalize internal whitespace (collapse multiples, remove newlines/tabs)
+    raw_prediction = ' '.join(raw_prediction.split())
+
+    # Protect against empty/whitespace-only output
+    if not raw_prediction:
+        raw_prediction = "(no prediction generated)"
+
+    # Optional length constraint
+    if len(raw_prediction) > max_length:
+        raw_prediction = raw_prediction[:max_length].rstrip(" .,!?") + "..."
+
+    return raw_prediction
 ```
