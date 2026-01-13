@@ -3,11 +3,13 @@ python
 import logging
 from typing import Callable
 
+from dataclasses import replace
+
 from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
 from .utils import generate_id, is_numeric_feasible
-from .config import EBACoreConfig
+from .config import EBACoreConfig, PolicyMode
 from .prompts import (
     format_prompt,
     INITIAL_TASK_PROMPT_TEMPLATE,
@@ -20,6 +22,14 @@ from .execution import execute_task
 from .task import TaskState
 
 logger = logging.getLogger("eba-core")
+
+
+# Policy ordering for safe, irreversible upgrades
+_POLICY_ORDER = {
+    PolicyMode.NORMAL: 0,
+    PolicyMode.CONSERVATIVE: 1,
+    PolicyMode.HALT: 2,
+}
 
 
 class EBACoreAgent:
@@ -37,6 +47,9 @@ class EBACoreAgent:
         self.objective = objective
         self.llm = llm_call
         self.config = config or EBACoreConfig()
+
+        # Current active policy mode (derived from config)
+        self.current_policy_mode: PolicyMode = self.config.policy_mode
 
         self.queue = TaskQueue(max_size=self.config.max_queue_size)
         self.memory = WorldModel()
@@ -72,9 +85,14 @@ class EBACoreAgent:
 
     def step(self) -> bool:
         """Execute one full cycle of the agent loop."""
-        # Early exit on HALT policy (drift-aware in future)
-        policy = self.config.effective_policy()
-        if policy.get("halt", False):
+        # Early exit on HALT policy (irreversible escalation)
+        recommended_mode = self.drift.get_policy_mode()
+        if _POLICY_ORDER[recommended_mode] > _POLICY_ORDER[self.current_policy_mode]:
+            self.current_policy_mode = recommended_mode
+            self.config = replace(self.config, policy_mode=recommended_mode)
+            logger.info(f"Policy upgrade: {self.current_policy_mode.name}")
+
+        if self.current_policy_mode == PolicyMode.HALT:
             logger.critical("Policy mode: HALT - stopping agent")
             return False
 
