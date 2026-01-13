@@ -3,11 +3,14 @@ python
 from datetime import datetime
 from typing import Dict, Optional, Any
 
+from .task import TaskState
+
 class WorldModel:
     """
     Minimal in-memory store for task history — no vector DB required yet.
 
     Maps task_id to a dict of task details (text, prediction, outcome, etc.).
+    Note: Records latest state only (overwrites previous entry for the same task_id).
     """
 
     def __init__(self):
@@ -21,6 +24,7 @@ class WorldModel:
         outcome: str,
         success: bool,
         feedback: str,
+        state: TaskState = TaskState.CREATED,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -28,9 +32,11 @@ class WorldModel:
 
         All core fields are stored as provided; pass None for unknown values.
         Optional metadata may be supplied for provenance or annotations.
+        Optional state records the task's lifecycle position.
         """
         entry = {
             "task": task_text,
+            "state": state.value,  # "created", "predicted", etc.
             "prediction": prediction,
             "outcome": outcome,
             "success": success,
