@@ -23,8 +23,7 @@ class EBACoreConfig:
     Central configuration for EBA (Enhanced BabyAGI).
     All thresholds, limits, and policy overrides are defined here.
 
-    Transition thresholds (public) define when drift signals trigger mode changes.
-    Effect parameters (_conservative_*) are private and resolved via effective_policy().
+    Consumers **must** use effective_policy(); direct access to _conservative_* fields is not policy-aware.
     """
 
     # Existing public fields (abbreviated)
@@ -39,19 +38,19 @@ class EBACoreConfig:
     low_conf_threshold: float = 0.4
     task_similarity_threshold: float = 0.75
 
-    # Policy mode (current active mode)
+    # Policy mode
     policy_mode: PolicyMode = PolicyMode.NORMAL
-
-    # Public transition thresholds (drift → policy)
-    conservative_drift_streak: int = 2
-    conservative_error_z: float = 2.0
-    halt_drift_streak: int = 4
-    halt_error_z: float = 4.0
 
     # Private: policy effect parameters (resolved via effective_policy())
     _conservative_max_subtasks: int = 2
     _conservative_critic_strictness: float = 0.9
     _conservative_prediction_bias_delta: float = -0.2
+
+    # Memory influence (retrieval for prediction context)
+    enable_memory_retrieval: bool = False
+    memory_retrieval_limit: int = 5
+    memory_similarity_threshold: float = 0.6
+    prefer_negative_memory: bool = True  # Bias toward failed outcomes
 
     def effective_policy(self) -> Mapping[str, object]:
         """
