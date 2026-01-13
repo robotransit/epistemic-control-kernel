@@ -1,5 +1,5 @@
-```
-python
+"```"
+"python"
 from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping
@@ -41,7 +41,7 @@ class EBACoreConfig:
     # Policy mode
     policy_mode: PolicyMode = PolicyMode.NORMAL
 
-    # Private: do NOT access directly; use effective_policy()
+    # Private: policy effect parameters (resolved via effective_policy())
     _conservative_max_subtasks: int = 2
     _conservative_critic_strictness: float = 0.9
     _conservative_prediction_bias_delta: float = -0.2
@@ -73,4 +73,4 @@ class EBACoreConfig:
             return MappingProxyType({"halt": True})
 
         raise ValueError(f"Unknown policy mode: {self.policy_mode}")
-```
+"```"
