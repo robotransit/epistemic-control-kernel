@@ -1,5 +1,5 @@
-"```"
-"python"
+```
+python
 from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping
@@ -23,7 +23,8 @@ class EBACoreConfig:
     Central configuration for EBA (Enhanced BabyAGI).
     All thresholds, limits, and policy overrides are defined here.
 
-    Consumers **must** use effective_policy(); direct access to _conservative_* fields is not policy-aware and may lead to incorrect behavior.
+    Transition thresholds (public) define when drift signals trigger mode changes.
+    Effect parameters (_conservative_*) are private and resolved via effective_policy().
     """
 
     # Existing public fields (abbreviated)
@@ -38,8 +39,14 @@ class EBACoreConfig:
     low_conf_threshold: float = 0.4
     task_similarity_threshold: float = 0.75
 
-    # Policy mode
+    # Policy mode (current active mode)
     policy_mode: PolicyMode = PolicyMode.NORMAL
+
+    # Public transition thresholds (drift → policy)
+    conservative_drift_streak: int = 2
+    conservative_error_z: float = 2.0
+    halt_drift_streak: int = 4
+    halt_error_z: float = 4.0
 
     # Private: policy effect parameters (resolved via effective_policy())
     _conservative_max_subtasks: int = 2
@@ -73,4 +80,4 @@ class EBACoreConfig:
             return MappingProxyType({"halt": True})
 
         raise ValueError(f"Unknown policy mode: {self.policy_mode}")
-"```"
+```
