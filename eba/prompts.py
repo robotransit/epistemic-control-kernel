@@ -28,6 +28,8 @@ or
 """
 
 PREDICTION_PROMPT_TEMPLATE = """
+{memory_context}
+
 Predict the expected outcome for this task toward the objective '{objective}'.
 
 Task: {task_text}
