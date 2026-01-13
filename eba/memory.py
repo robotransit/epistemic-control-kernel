@@ -1,7 +1,7 @@
 ```
 python
 from datetime import datetime
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 
 from .task import TaskState
 
@@ -41,7 +41,7 @@ class WorldModel:
             "outcome": outcome,
             "success": success,
             "feedback": feedback,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow(),  # Store datetime object (serialize at boundaries)
         }
 
         if metadata is not None:
@@ -53,11 +53,59 @@ class WorldModel:
 
     def get(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve data for a specific task by ID, or None if not found."""
-        return self.tasks.get(task_id)
+        entry = self.tasks.get(task_id)
+        if entry is not None:
+            # Serialize timestamp for output
+            entry = dict(entry)  # shallow copy
+            entry["timestamp"] = entry["timestamp"].isoformat()
+        return entry
+
+    def get_recent(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Return the most recent tasks (sorted by timestamp descending)."""
+        sorted_tasks = sorted(
+            self.tasks.values(),
+            key=lambda e: e["timestamp"],
+            reverse=True
+        )
+        recent = sorted_tasks[:limit]
+        # Serialize timestamps for output
+        return [dict(t, timestamp=t["timestamp"].isoformat()) for t in recent]
+
+    def get_similar(
+        self,
+        task_text: str,
+        threshold: float = 0.7,
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """
+        Return tasks with cosine similarity above threshold to the given task_text.
+
+        Placeholder similarity function — future: use real embeddings.
+        """
+        similar = []
+        for entry in self.tasks.values():
+            past_text = entry["task"]
+            union = set(task_text.split()) | set(past_text.split())
+            if not union:
+                continue  # Avoid division by zero
+            intersection = set(task_text.split()) & set(past_text.split())
+            sim = len(intersection) / len(union)
+            if sim >= threshold:
+                similar.append(entry)
+
+        # Sort by timestamp descending
+        similar.sort(key=lambda e: e["timestamp"], reverse=True)
+        recent = similar[:limit]
+        # Serialize timestamps for output
+        return [dict(t, timestamp=t["timestamp"].isoformat()) for t in recent]
+
+    # Deprecated: use all_tasks() instead
+    # def get_entries(self) -> Dict[str, Dict[str, Any]]:
+    #     return dict(self.tasks)
 
     def all_tasks(self) -> Dict[str, Dict[str, Any]]:
-        """Return a copy of the entire task history."""
-        return dict(self.tasks)
+        """Return a copy of the entire task history with serialized timestamps."""
+        return {k: dict(v, timestamp=v["timestamp"].isoformat()) for k, v in self.tasks.items()}
 
     def __len__(self) -> int:
         """Number of recorded tasks."""
