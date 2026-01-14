@@ -1,3 +1,7 @@
+> **Status:** Design-only specification 
+> **Scope:** Defines API and authority boundaries for Commit 4a 
+> **Note:** No implementation or wiring is performed in this phase. 
+
 # Commit 4a API Boundary Sketch (Design-Only)
 
 ## Intent
