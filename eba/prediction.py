@@ -1,3 +1,8 @@
+# NOTE:
+# memory_context is opaque, human-readable text.
+# Prediction must not interpret, parse, or branch on its contents.
+# All semantic interpretation belongs to policy layers only.
+
 ```
 python
 from typing import Callable
