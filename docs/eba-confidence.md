@@ -56,4 +56,4 @@ Confidence does not operate at token level
 
 This document defines semantics only; it does not prescribe a specific computation or update rule.
 
-See also: EBA vs Internal LLM Mechanisms for how this differs from LLM internals.
+See also: EBA Confidence vs LLM Uncertainty for how this differs from LLM internals.
