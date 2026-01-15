@@ -27,6 +27,7 @@ or
 []
 """
 
+# memory_context may be empty; it is informational only
 PREDICTION_PROMPT_TEMPLATE = """
 {memory_context}
 
