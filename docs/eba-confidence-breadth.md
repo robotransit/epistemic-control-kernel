@@ -6,7 +6,7 @@ This document defines how confidence influences breadth defaults — semantics o
 
 Confidence ∈ [0, 1] (see docs/eba-confidence.md)
 
-Breadth defaults are soft guidance only (GUIDED mode).  
+Breadth defaults are soft guidance only and apply exclusively in GUIDED mode (NORMAL is unaffected).  
 In ENFORCED mode, breadth may be hard-constrained.
 
 ## Breadth Levels (Canonical Set)
@@ -43,6 +43,50 @@ In ENFORCED mode, breadth may be hard-constrained.
 - Breadth does not directly alter prompt content  
 - Breadth does not operate at token level  
 - Breadth does not guarantee correctness or safety  
+
+## Confidence → Breadth Resolver (Semantics Sketch)
+
+This section describes semantic intent only; it does not imply a callable component.
+
+Confidence → breadth mapping is a **pure, declarative resolver** — no computation, no enforcement, no side effects.
+
+It answers:
+
+“What breadth default is justified given current confidence and policy mode?”
+
+The resolver consumes:
+- Current confidence (scalar ∈ [0, 1], opaque)
+- Current policy mode (NORMAL / GUIDED / ENFORCED / HALT)
+
+It produces:
+- Recommended breadth level (FULL, MODERATE, RESTRICTED, DEFERRED)
+
+The mapping is defined in the table above.
+
+The resolver must:
+- Be deterministic (same inputs → same output)
+- Be inspectable (logged when consulted)
+- Be overridable (higher-level orchestration may ignore)
+- Never enforce (soft guidance only in GUIDED mode)
+- Never increase breadth after failure (monotonicity invariant)
+
+The resolver must not:
+- Compute confidence
+- Modify confidence
+- Read memory directly
+- Depend on prediction internals
+- Alter prompts or generation
+- Trigger hard gating (deferred to future commits)
+
+This resolver is a **translation layer** — confidence (epistemic signal) → breadth (behavioral guidance).
+
+It is **not** a decision engine.
+
+## See also 
+eba-confidence.md — general confidence semantics 
+eba-rolling-confidence-semantics.md — rolling update rules 
+eba-policy-modes.md — policy modulation of confidence influence
+appendix/eba-confidence-failure-asymmetry.md — justification for asymmetric confidence updates
 
 ## Relationship to Other Commits
 
