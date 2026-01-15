@@ -41,13 +41,15 @@ def build_prediction_context(
     context_lines = ["Relevant past outcomes:"]
     for entry in similar:
         task = entry.get("task", "")[:100]
+        task_str = task if len(task) < 100 else f"{task}..."
         state = entry.get("state", "unknown")
         outcome = entry.get("outcome", "(no outcome)")[:100]
+        outcome_str = outcome if len(outcome) < 100 else f"{outcome}..."
         success = entry.get("success", False)
         feedback = entry.get("feedback", "(no feedback)")[:100]
         if len(feedback) == 100:
             feedback += "..."
-        line = f"- Task: {task}... | State: {state} | Outcome: {outcome}... | Success: {success} | Feedback: {feedback}"
+        line = f"- Task: {task_str} | State: {state} | Outcome: {outcome_str} | Success: {success} | Feedback: {feedback}"
         context_lines.append(line)
 
     return "\n".join(context_lines)
@@ -66,6 +68,8 @@ def generate_prediction(
 
     This function is pure: it formats the prompt, calls the LLM, and safely parses the result.
     No side effects, no logging, no state changes.
+
+    Memory context is opaque text. Do not interpret here.
     """
     # Build memory context (empty if disabled or no relevant outcomes)
     memory_context = build_prediction_context(task_text, objective, memory, config)
