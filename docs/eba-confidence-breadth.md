@@ -33,8 +33,9 @@ In ENFORCED mode, breadth may be hard-constrained.
 - All breadth defaults in GUIDED mode are advisory and may be overridden by higher-level orchestration  
 - Breadth must be inspectable (logged when changed)  
 - Breadth must not suppress novelty entirely — only discourage it  
-- In ADVISORY mode, breadth must always be FULL (no influence)  
+- In NORMAL mode, breadth must always be FULL (no influence)  
 - In HALT mode, breadth is irrelevant (no generation occurs)  
+- Absence of confidence data or computation must default to FULL breadth (no suppression by default)
 
 ## Non-goals
 
@@ -43,10 +44,15 @@ In ENFORCED mode, breadth may be hard-constrained.
 - Breadth does not operate at token level  
 - Breadth does not guarantee correctness or safety  
 
-## Relationship to Future Commits
+## Relationship to Other Commits
 
-This semantics draft is non-binding on implementation.  
-Commit 4b will consume this mapping to set defaults (soft gating).  
-Commit 4c will add hard constraints under ENFORCED mode.  
+- **Commit 4a**  
+  Supplies gated, read-only context used upstream in confidence estimation
+
+- **Commit 4b (this commit)**  
+  Translates confidence into recommended breadth defaults
+
+- **Commit 4c (future)**  
+  Introduces hard constraints and irreversible enforcement under ENFORCED mode  
 
 This document defines semantics only — no APIs, no wiring, no forward commitments.
