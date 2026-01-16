@@ -10,6 +10,15 @@ from .config import PolicyMode, EBACoreConfig
 
 logger = logging.getLogger("eba-core")
 
+# Why this exists before enforcement (Commit 4b)
+#
+# This resolver translates confidence → breadth defaults but does NOT enforce them.
+# It is intentionally introduced before Commit 4c (hard gating) to:
+# - Establish observability and auditability first
+# - Prevent premature coupling between confidence signals and behavioural control
+# - Allow safe testing/logging of recommendations without risking irreversible side effects
+# ⚠️ Enforcement must not be added here — see Commit 4c.
+
 def generate_id() -> str:
     """Generate a unique task ID using UUID4."""
     return str(uuid.uuid4())
