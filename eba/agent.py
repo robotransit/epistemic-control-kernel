@@ -1,5 +1,4 @@
 ```
-python
 import logging
 from typing import Callable
 
@@ -8,7 +7,7 @@ from dataclasses import replace
 from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
-from .utils import generate_id, is_numeric_feasible
+from .utils import generate_id, is_numeric_feasible, get_recommended_breadth
 from .config import EBACoreConfig, PolicyMode
 from .prompts import (
     format_prompt,
@@ -27,8 +26,9 @@ logger = logging.getLogger("eba-core")
 # Policy ordering for safe, irreversible upgrades
 _POLICY_ORDER = {
     PolicyMode.NORMAL: 0,
-    PolicyMode.CONSERVATIVE: 1,
-    PolicyMode.HALT: 2,
+    PolicyMode.GUIDED: 1,
+    PolicyMode.ENFORCED: 2,
+    PolicyMode.HALT: 3,
 }
 
 
@@ -50,6 +50,9 @@ class EBACoreAgent:
 
         # Current active policy mode (derived from config)
         self.current_policy_mode: PolicyMode = self.config.policy_mode
+
+        # Current confidence (placeholder for Commit 4b — future: rolling signal)
+        self.current_confidence: float = 0.5
 
         self.queue = TaskQueue(max_size=self.config.max_queue_size)
         self.memory = WorldModel()
@@ -120,6 +123,8 @@ class EBACoreAgent:
             task_text=task_text,
             objective=self.objective,
             llm_call=self.llm,
+            memory=self.memory,
+            config=self.config,
         )
 
         # 2. Execute the task using the execution seam
@@ -148,7 +153,7 @@ class EBACoreAgent:
         # Final state after critic
         if success:
             final_state = TaskState.SUCCEEDED
-        elif feedback:  # non-empty feedback currently treated as critic rejection (future: distinguish caveats vs rejection)
+        elif feedback:  # non-empty feedback currently treated as critic rejection
             final_state = TaskState.REJECTED_BY_CRITIC
         else:
             final_state = TaskState.FAILED
@@ -190,8 +195,21 @@ class EBACoreAgent:
             logger.info("Goal achieved — stopping early")
             return False
 
-        # 6. Generate subtasks with safe parsing
-        # TODO: Move max_subtasks to config (e.g. config.max_subtasks_per_step)
+        # 6. Commit 4c enforcement (minimal, reversible, ENFORCED only)
+        recommended_breadth = get_recommended_breadth(
+            confidence=self.current_confidence,  # Pre-computed (placeholder for future rolling)
+            policy_mode=self.current_policy_mode
+        )
+
+        if self.current_policy_mode == PolicyMode.ENFORCED and recommended_breadth == "DEFERRED":
+            logger.critical(
+                f"ENFORCED mode: DEFERRED recommended — skipping subtask generation "
+                f"(confidence={self.current_confidence:.2f}, mode={self.current_policy_mode.name})"
+            )
+            # Note: return True = cycle completed, no subtasks generated, queue may drain naturally (deferral, not global halt)
+            return True
+
+        # 7. Generate subtasks with safe parsing
         subtasks = generate_subtasks(
             current_task=task_text,
             objective=self.objective,
@@ -208,7 +226,7 @@ class EBACoreAgent:
 
         self.cycles += 1
 
-        # 7. Periodic guard check
+        # 8. Periodic guard check
         if self.cycles % self.config.guard_interval == 0:
             if self.drift.severe():
                 logger.error("Severe instability detected — performing partial reset")
