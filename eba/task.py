@@ -1,5 +1,3 @@
-```
-python
 from enum import Enum
 
 class TaskState(Enum):
@@ -16,4 +14,3 @@ class TaskState(Enum):
     FAILED = "failed"
     REJECTED_BY_CRITIC = "rejected_by_critic"
     DEFERRED = "deferred"
-```
