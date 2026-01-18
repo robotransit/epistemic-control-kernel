@@ -1,5 +1,3 @@
-```
-python
 import statistics
 from collections import deque
 from typing import List
@@ -88,17 +86,11 @@ class DriftMonitor:
         # HALT conditions (highest priority)
         if (
             self.severe()
-            or self.drift_streak >= self.config.halt_drift_streak
-            or self.last_error_z >= self.config.halt_error_z
+            or self.drift_streak >= self.config.max_drift_streak
+            or self.last_error_z >= self.config.error_z_threshold
         ):
             return PolicyMode.HALT
 
-        # CONSERVATIVE conditions
-        if (
-            self.drift_streak >= self.config.conservative_drift_streak
-            or self.last_error_z >= self.config.conservative_error_z
-        ):
-            return PolicyMode.CONSERVATIVE
 
         return PolicyMode.NORMAL
-```
+        
