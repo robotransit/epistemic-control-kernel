@@ -23,6 +23,19 @@ It focuses on explicit prediction–execution–evaluation loops, conservative d
 - Multi-model or ensemble critics  
 - Adaptive threshold tuning  
 
+**Policy Enforcement (Commit 4c)**
+
+EBA supports policy enforcement in ENFORCED mode.
+
+Minimal implementation: when the recommended breadth is DEFERRED, subtask generation is skipped for that cycle.
+- Enforcement is explicitly gated by policy mode
+- The consequence is reversible and fully logged
+- No prompt mutation or new signals are introduced
+- See Commit 4c for implementation details
+- See [scratch_test_4c.py](scratch_test_4c.py) for a minimal proof-of-concept run
+
+This is the first hard consequence of reliability signals: the agent can explicitly choose not to act.
+
 **Current focus**  
 Reliability first: explicit phases, no silent hallucinations, clear halting conditions, and modular seams for future extensions.
 
