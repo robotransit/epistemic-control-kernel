@@ -126,10 +126,24 @@ class EBACoreAgent:
             config=self.config,
         )
 
-        # 2. Execute the task using the execution seam
-        outcome = execute_task(task_text, self.llm)
+        # 2. Execute the task using the execution seam (Phase 3: gate execution on DEFERRED in ENFORCED mode)
+        recommended_breadth = get_recommended_breadth(
+            confidence=self.current_confidence,  # Pre-computed (placeholder for future rolling)
+            policy_mode=self.current_policy_mode
+        )
 
-        # Record EXECUTED state
+        if self.current_policy_mode == PolicyMode.ENFORCED and recommended_breadth == "DEFERRED":
+            logger.critical(
+                f"ENFORCED mode: DEFERRED recommended — skipping task execution "
+                f"(confidence={self.current_confidence:.2f}, mode={self.current_policy_mode.name})"
+            )
+            # Skip execution, do not mutate world state
+            # Cycle continues (return True later)
+            outcome = ""  # No real outcome — placeholder
+        else:
+            outcome = execute_task(task_text, self.llm)
+
+        # Record EXECUTED state (even if skipped)
         self.memory.record(
             task_id=task_id,
             task_text=task_text,
@@ -194,21 +208,7 @@ class EBACoreAgent:
             logger.info("Goal achieved — stopping early")
             return False
 
-        # 6. Commit 4c enforcement (minimal, reversible, ENFORCED only)
-        recommended_breadth = get_recommended_breadth(
-            confidence=self.current_confidence,  # Pre-computed (placeholder for future rolling)
-            policy_mode=self.current_policy_mode
-        )
-
-        if self.current_policy_mode == PolicyMode.ENFORCED and recommended_breadth == "DEFERRED":
-            logger.critical(
-                f"ENFORCED mode: DEFERRED recommended — skipping subtask generation "
-                f"(confidence={self.current_confidence:.2f}, mode={self.current_policy_mode.name})"
-            )
-            # Note: return True = cycle completed, no subtasks generated, queue may drain naturally (deferral, not global halt)
-            return True
-
-        # 7. Generate subtasks with safe parsing
+        # 6. Generate subtasks with safe parsing
         subtasks = generate_subtasks(
             current_task=task_text,
             objective=self.objective,
@@ -225,7 +225,7 @@ class EBACoreAgent:
 
         self.cycles += 1
 
-        # 8. Periodic guard check
+        # 7. Periodic guard check
         if self.cycles % self.config.guard_interval == 0:
             if self.drift.severe():
                 logger.error("Severe instability detected — performing partial reset")
@@ -240,3 +240,4 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
+
