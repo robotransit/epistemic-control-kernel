@@ -3,8 +3,6 @@
 # Prediction must not interpret, parse, or branch on its contents.
 # All semantic interpretation belongs to policy layers only.
 
-```
-python
 from typing import Callable
 
 from .prompts import format_prompt, PREDICTION_PROMPT_TEMPLATE
@@ -95,4 +93,3 @@ def generate_prediction(
         raw_prediction = raw_prediction[:max_length].rstrip(" .,!?") + "..."
 
     return raw_prediction
-```
