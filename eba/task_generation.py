@@ -1,5 +1,3 @@
-```
-python
 from typing import Callable, List
 
 from .prompts import format_prompt, SUBTASK_GENERATION_PROMPT
@@ -48,4 +46,3 @@ def generate_subtasks(
         cleaned_subtasks = cleaned_subtasks[:max_subtasks]
 
     return cleaned_subtasks
-```
