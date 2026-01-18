@@ -5,6 +5,7 @@ from typing import List
 from .utils import z_score, safe_mean
 from .config import EBACoreConfig, PolicyMode
 
+
 class DriftMonitor:
     """
     Monitors multiple levels of drift in EBA execution.
@@ -81,8 +82,18 @@ class DriftMonitor:
         Determine recommended policy mode based on current drift signals.
 
         Uses public transition thresholds from config to decide mode.
-        Returns NORMAL by default, CONSERVATIVE on moderate signals, HALT on severe/repeated drift.
+        Returns NORMAL by default, CONSERVATIVE on moderate signals,
+        HALT on severe/repeated drift.
         """
+
+        # TODO (Phase 3 candidate): Legacy drift-based hard halt
+        # This halt predates policy enforcement (Commit 4c) and currently
+        # serves as a safety backstop. Once execution gating via policy
+        # enforcement is proven across tooling and external calls, this
+        # mechanism may become redundant and can be retired or downgraded
+        # to advisory-only. Until then, it intentionally remains as
+        # layered defense.
+
         # HALT conditions (highest priority)
         if (
             self.severe()
@@ -90,6 +101,10 @@ class DriftMonitor:
             or self.last_error_z >= self.config.error_z_threshold
         ):
             return PolicyMode.HALT
+
+        return PolicyMode.NORMAL
+
+
 
 
         return PolicyMode.NORMAL
