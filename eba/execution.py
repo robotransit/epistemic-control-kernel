@@ -1,5 +1,3 @@
-```
-python
 from typing import Callable
 import re
 import ast
@@ -66,4 +64,3 @@ def execute_task(
 
     # Normalize internal whitespace (symmetry with prediction/task gen)
     return ' '.join(outcome.split())
-```
