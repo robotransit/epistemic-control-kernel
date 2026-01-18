@@ -1,5 +1,3 @@
-```
-python
 from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping
@@ -9,11 +7,13 @@ from types import MappingProxyType
 class PolicyMode(Enum):
     """
     NORMAL: full agent operation (default)
-    CONSERVATIVE: reduced risk profile (lower breadth, stricter critic, pessimistic prediction)
+    GUIDED: advisory mode (recommendations only, no enforcement)
+    ENFORCED: hard enforcement allowed (agent may block actions)
     HALT: no further task generation or execution (irreversible until manual reset)
     """
     NORMAL = "normal"
-    CONSERVATIVE = "conservative"
+    GUIDED = "guided"
+    ENFORCED = "enforced"
     HALT = "halt"
 
 
@@ -79,4 +79,4 @@ class EBACoreConfig:
             return MappingProxyType({"halt": True})
 
         raise ValueError(f"Unknown policy mode: {self.policy_mode}")
-```
+
