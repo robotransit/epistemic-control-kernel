@@ -85,6 +85,9 @@ class DriftMonitor:
         Returns NORMAL by default, CONSERVATIVE on moderate signals,
         HALT on severe/repeated drift.
         """
+        # Respect already-escalated policy (do not downgrade or re-evaluate)
+        if self.config.policy_mode == PolicyMode.HALT:
+            return PolicyMode.HALT
 
         # TODO (Phase 3 candidate): Legacy drift-based hard halt
         # This halt predates policy enforcement (Commit 4c) and currently
@@ -105,7 +108,4 @@ class DriftMonitor:
         return PolicyMode.NORMAL
 
 
-
-
-        return PolicyMode.NORMAL
         
