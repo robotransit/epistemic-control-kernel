@@ -8,61 +8,19 @@ from .config import PolicyMode, EBACoreConfig
 
 logger = logging.getLogger("eba-core")
 
-# Why this exists before enforcement (Commit 4b)
-#
-# This resolver translates confidence → breadth defaults but does NOT enforce them.
-# It is intentionally introduced before Commit 4c (hard gating) to:
-# - Establish observability and auditability first
-# - Prevent premature coupling between confidence signals and behavioural control
-# - Allow safe testing/logging of recommendations without risking irreversible side effects
-# ⚠️ Enforcement must not be added here — see Commit 4c.
-def get_recommended_breadth(
-    confidence: float,
-    policy_mode: PolicyMode,
-) -> str:
-    """
-    Map confidence to a recommended breadth level (soft guidance only).
-
-    Returns one of: 'FULL', 'MODERATE', 'RESTRICTED', 'DEFERRED'
-    Semantics defined in docs/eba-confidence-breadth.md
-    """
-
-    # NORMAL mode is never affected by confidence
-    if policy_mode == PolicyMode.NORMAL:
-        recommended = "FULL"
-    elif confidence >= 0.8:
-        recommended = "FULL"
-    elif confidence >= 0.5:
-        recommended = "MODERATE"
-    elif confidence >= 0.3:
-        recommended = "RESTRICTED"
-    else:
-        recommended = "DEFERRED"
-
-    logger.info(
-        f"Recommended breadth: {recommended} "
-        f"(confidence={confidence:.2f}, mode={policy_mode.name})"
-    )
-
-    return recommended
-
-
 def generate_id() -> str:
     """Generate a unique task ID using UUID4."""
     return str(uuid.uuid4())
 
-
 def safe_mean(values: List[float]) -> float:
     """Compute mean safely, returning 0 if the list is empty."""
     return sum(values) / max(1, len(values))
-
 
 def z_score(value: float, mean: float, std: float) -> float:
     """Compute z-score, returning 0 if standard deviation is zero."""
     if std == 0:
         return 0.0
     return (value - mean) / std
-
 
 def cosine_sim(a: List[float], b: List[float]) -> float:
     """
@@ -82,7 +40,6 @@ def cosine_sim(a: List[float], b: List[float]) -> float:
 
     return dot / (mag_a * mag_b)
 
-
 def safe_parse_json_array(response: str) -> List[str]:
     """
     Safely parse a JSON array string from LLM output.
@@ -92,13 +49,12 @@ def safe_parse_json_array(response: str) -> List[str]:
     try:
         parsed = json.loads(response.strip())
         if isinstance(parsed, list):
-            return [str(item) for item in parsed]
+            return [str(item) for item in parsed]  # Ensure all are strings
         else:
             raise ValueError("Not a list")
     except (json.JSONDecodeError, ValueError, TypeError) as e:
         logger.warning(f"Subtask JSON parse failed: {e} - no subtasks generated")
         return []
-
 
 def is_numeric_feasible(
     prediction: Any,
@@ -178,6 +134,63 @@ def score_memory_entry(
     return max(0.0, score)
 
 
-    score = similarity * severity * policy_multiplier
-    return max(0.0, score)
-```
+# Why this exists before enforcement (Commit 4b)
+#
+# This resolver translates confidence → breadth defaults but does NOT enforce them.
+# It is intentionally introduced before Commit 4c (hard gating) to:
+# - Establish observability and auditability first
+# - Prevent premature coupling between confidence signals and behavioural control
+# - Allow safe testing/logging of recommendations without risking irreversible side effects
+# ⚠️ Enforcement must not be added here — see Commit 4c.
+
+def get_recommended_breadth(
+    confidence: float,
+    policy_mode: PolicyMode,
+) -> str:
+    """
+    Map confidence to a recommended breadth level (soft guidance only).
+
+    Returns one of: 'FULL', 'MODERATE', 'RESTRICTED', 'DEFERRED'
+    Semantics defined in docs/eba-confidence-breadth.md
+    """
+
+    # NORMAL mode is never affected by confidence
+    if policy_mode == PolicyMode.NORMAL:
+        recommended = "FULL"
+    elif confidence >= 0.8:
+        recommended = "FULL"
+    elif confidence >= 0.5:
+        recommended = "MODERATE"
+    elif confidence >= 0.3:
+        recommended = "RESTRICTED"
+    else:
+        recommended = "DEFERRED"
+
+    logger.info(
+        f"Recommended breadth: {recommended} "
+        f"(confidence={confidence:.2f}, mode={policy_mode.name})"
+    )
+
+    return recommended
+
+
+# Enforcement decision helper (derived from Commit 4c)
+#
+# This helper encapsulates the enforcement decision introduced in Commit 4c.
+# It introduces no new policy semantics and performs no side effects.
+# Phase 3 reuses this decision for both generation and execution gating.
+
+def should_execute(policy_mode: PolicyMode, recommendation: str) -> bool:
+    """
+    Determine whether execution is permitted under the given policy mode
+    and breadth recommendation.
+
+    Returns True if permitted; False if blocked.
+    This is the single authoritative enforcement rule — used for both
+    subtask generation and task execution.
+    """
+    if policy_mode != PolicyMode.ENFORCED:
+        return True
+
+    return recommendation != "DEFERRED"
+
