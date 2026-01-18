@@ -1,5 +1,3 @@
-```
-python
 from collections import deque
 from typing import Dict, List, Optional
 
@@ -45,4 +43,4 @@ class TaskQueue:
 
     def __repr__(self) -> str:
         return f"TaskQueue({len(self)}/{self.max_size} tasks)"
-```
+
