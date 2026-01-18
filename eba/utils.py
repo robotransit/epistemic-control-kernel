@@ -1,5 +1,3 @@
-```
-
 import uuid
 import logging
 import math
@@ -175,6 +173,10 @@ def score_memory_entry(
         policy_multiplier = 0.8 if similarity < 0.8 else 1.0
     elif policy_mode == PolicyMode.HALT:
         policy_multiplier = 0.0
+
+    score = similarity * severity * policy_multiplier
+    return max(0.0, score)
+
 
     score = similarity * severity * policy_multiplier
     return max(0.0, score)
