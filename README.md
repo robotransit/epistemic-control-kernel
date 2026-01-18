@@ -23,19 +23,6 @@ It focuses on explicit prediction–execution–evaluation loops, conservative d
 - Multi-model or ensemble critics  
 - Adaptive threshold tuning  
 
-**Policy Enforcement (Commit 4c)**
-
-EBA supports policy enforcement in ENFORCED mode.
-
-Minimal implementation: when the recommended breadth is DEFERRED, subtask generation is skipped for that cycle.
-- Enforcement is explicitly gated by policy mode
-- The consequence is reversible and fully logged
-- No prompt mutation or new signals are introduced
-- See Commit 4c for implementation details
-- See [scratch_test_4c.py](scratch_test_4c.py) for a minimal proof-of-concept run
-
-This is the first hard consequence of reliability signals: the agent can explicitly choose not to act.
-
 **Current focus**  
 Reliability first: explicit phases, no silent hallucinations, clear halting conditions, and modular seams for future extensions.
 
@@ -72,6 +59,17 @@ EBA Core is intentionally minimal and conservative. It is **not**:
 - A complete agent with built-in planning or reasoning strategies
 
 EBA Core focuses on **reliability, explicit control flow, and drift-aware autonomy**, and is designed to be embedded into larger systems rather than used as a standalone product.
+
+## Policy Enforcement
+
+EBA can now enforce recommendations in ENFORCED mode across both subtask generation and task execution.  
+When recommended breadth is DEFERRED, generation and execution are skipped for the cycle.  
+
+- Enforcement is minimal, reversible, and fully logged  
+- See Commit 4c for implementation details  
+- See tests/scratch_test_4c.py for a minimal proof-of-concept run demonstrating deferral  
+
+This completes the core reliability loop within EBA Core: detection → recommendation → consequence.
 
 ## Quick Start
 
