@@ -1,5 +1,3 @@
-```
-python
 import json
 import logging
 from typing import Tuple, Callable, Optional
@@ -87,4 +85,4 @@ def _parse_critic_response(response: str) -> Tuple[bool, str]:
     except (json.JSONDecodeError, TypeError):
         logger.warning("Critic JSON parse failed - defaulting to failure (pessimistic)")
         return False, "Parse failed - treated as non-success"
-```
+
