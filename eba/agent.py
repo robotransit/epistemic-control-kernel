@@ -92,7 +92,7 @@ class EBACoreAgent:
         if _POLICY_ORDER[recommended_mode] > _POLICY_ORDER[self.current_policy_mode]:
             self.current_policy_mode = recommended_mode
             self.config = replace(self.config, policy_mode=recommended_mode)
-            self.drift.config = self.config  # Sync DriftMonitor with updated config
+            self.drift.config = self.config  # Invariant: DriftMonitor must always observe the same config as the agent. Sync only on irreversible policy upgrades to prevent silent divergence.
             logger.info(f"Policy upgrade: {self.current_policy_mode.name}")
 
         if self.current_policy_mode == PolicyMode.HALT:
@@ -257,3 +257,4 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
+
