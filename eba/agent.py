@@ -257,4 +257,3 @@ class EBACoreAgent:
             if not self.step():
                 break
         logger.info(f"EBA run completed after {self.cycles} cycles")
-
