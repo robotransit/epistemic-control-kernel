@@ -6,7 +6,7 @@ from dataclasses import replace
 from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
-from .utils import generate_id, is_numeric_feasible, get_recommended_breadth
+from .utils import generate_id, is_numeric_feasible, get_recommended_breadth, should_execute
 from .config import EBACoreConfig, PolicyMode
 from .prompts import (
     format_prompt,
@@ -92,6 +92,7 @@ class EBACoreAgent:
         if _POLICY_ORDER[recommended_mode] > _POLICY_ORDER[self.current_policy_mode]:
             self.current_policy_mode = recommended_mode
             self.config = replace(self.config, policy_mode=recommended_mode)
+            self.drift.config = self.config  # Sync DriftMonitor with updated config
             logger.info(f"Policy upgrade: {self.current_policy_mode.name}")
 
         if self.current_policy_mode == PolicyMode.HALT:
@@ -132,16 +133,18 @@ class EBACoreAgent:
             policy_mode=self.current_policy_mode
         )
 
-        if self.current_policy_mode == PolicyMode.ENFORCED and recommended_breadth == "DEFERRED":
-            logger.critical(
-                f"ENFORCED mode: DEFERRED recommended — skipping task execution "
-                f"(confidence={self.current_confidence:.2f}, mode={self.current_policy_mode.name})"
-            )
-            # Skip execution, do not mutate world state
-            # Cycle continues (return True later)
-            outcome = ""  # No real outcome — placeholder
-        else:
+        if should_execute(self.current_policy_mode, recommended_breadth):
             outcome = execute_task(task_text, self.llm)
+        else:
+            logger.info(
+                "Execution skipped",
+                extra={
+                    "policy_mode": self.current_policy_mode.name,
+                    "recommendation": recommended_breadth,
+                    "confidence": self.current_confidence,
+                },
+            )
+            outcome = ""  # No real outcome — placeholder
 
         # Record EXECUTED state (even if skipped)
         self.memory.record(
@@ -208,20 +211,34 @@ class EBACoreAgent:
             logger.info("Goal achieved — stopping early")
             return False
 
-        # 6. Generate subtasks with safe parsing
-        subtasks = generate_subtasks(
-            current_task=task_text,
-            objective=self.objective,
-            llm_call=self.llm,
-            max_subtasks=5,
+        # 6. Generate subtasks with safe parsing (Phase 3: route subtask generation through enforcement decision helper)
+        recommended_breadth = get_recommended_breadth(
+            confidence=self.current_confidence,
+            policy_mode=self.current_policy_mode
         )
 
-        logger.info(f"Generated {len(subtasks)} subtasks")
+        if should_execute(self.current_policy_mode, recommended_breadth):
+            subtasks = generate_subtasks(
+                current_task=task_text,
+                objective=self.objective,
+                llm_call=self.llm,
+                max_subtasks=5,
+            )
+            logger.info(f"Generated {len(subtasks)} subtasks")
 
-        for sub in subtasks:
-            sub_id = generate_id()
-            self.queue.push({"id": sub_id, "text": sub})
-            self._record_task_created(sub_id, sub)  # Record CREATED for new subtasks
+            for sub in subtasks:
+                sub_id = generate_id()
+                self.queue.push({"id": sub_id, "text": sub})
+                self._record_task_created(sub_id, sub)  # Record CREATED for new subtasks
+        else:
+            logger.info(
+                "Subtask generation skipped",
+                extra={
+                    "policy_mode": self.current_policy_mode.name,
+                    "recommendation": recommended_breadth,
+                    "confidence": self.current_confidence,
+                },
+            )
 
         self.cycles += 1
 
