@@ -1,13 +1,17 @@
 import logging
 from typing import Callable
-
 from dataclasses import replace
 
 from .queue import TaskQueue
 from .memory import WorldModel
 from .drift import DriftMonitor
-from .utils import generate_id, is_numeric_feasible, get_recommended_breadth, should_execute
-from .config import EBACoreConfig, PolicyMode
+from .utils import (
+    generate_id,
+    is_numeric_feasible,
+    get_recommended_breadth,
+    should_execute,
+)
+from .config import ECKConfig, PolicyMode
 from .prompts import (
     format_prompt,
     INITIAL_TASK_PROMPT_TEMPLATE,
@@ -19,7 +23,7 @@ from .task_generation import generate_subtasks
 from .execution import execute_task
 from .task import TaskState
 
-logger = logging.getLogger("eba-core")
+logger = logging.getLogger("eck")
 
 
 # Policy ordering for safe, irreversible upgrades
@@ -31,26 +35,28 @@ _POLICY_ORDER = {
 }
 
 
-class EBACoreAgent:
+class ECKAgent:
     """
-    Framework-agnostic core of Enhanced BabyAGI (EBA).
-    Orchestrates task queue, memory, drift monitoring, and LLM calls.
+    Framework-agnostic core of the Epistemic Control Kernel (ECK).
+
+    Orchestrates task queue, memory, drift monitoring,
+    and LLM-mediated prediction, execution, and evaluation.
     """
 
     def __init__(
         self,
         objective: str,
         llm_call: Callable[[str], str],  # Single LLM function for all prompts
-        config: EBACoreConfig = None,
+        config: ECKConfig = None,
     ):
         self.objective = objective
         self.llm = llm_call
-        self.config = config or EBACoreConfig()
+        self.config = config or ECKConfig()
 
         # Current active policy mode (derived from config)
         self.current_policy_mode: PolicyMode = self.config.policy_mode
 
-        # Current confidence (placeholder for Commit 4b — future: rolling signal)
+        # Current confidence (placeholder — future: rolling signal)
         self.current_confidence: float = 0.5
 
         self.queue = TaskQueue(max_size=self.config.max_queue_size)
@@ -60,7 +66,7 @@ class EBACoreAgent:
         self.cycles: int = 0
 
     def _record_task_created(self, task_id: str, task_text: str) -> None:
-        """Helper to record CREATED state when task is enqueued."""
+        """Record CREATED state when a task is enqueued."""
         self.memory.record(
             task_id=task_id,
             task_text=task_text,
@@ -68,46 +74,49 @@ class EBACoreAgent:
             outcome="",
             success=False,
             feedback="",
-            state=TaskState.CREATED
+            state=TaskState.CREATED,
         )
 
     def seed(self, initial_task: str = None) -> None:
-        """Start with an initial task (or generate one if none provided)."""
+        """Seed the agent with an initial task (or generate one)."""
         if initial_task is None:
-            prompt = format_prompt(INITIAL_TASK_PROMPT_TEMPLATE, objective=self.objective)
+            prompt = format_prompt(
+                INITIAL_TASK_PROMPT_TEMPLATE,
+                objective=self.objective,
+            )
             initial_task = self.llm(prompt).strip()
 
         task_id = generate_id()
-        task = {"id": task_id, "text": initial_task}
-        self.queue.push(task)
-
-        # Record CREATED state
+        self.queue.push({"id": task_id, "text": initial_task})
         self._record_task_created(task_id, initial_task)
+
         logger.info(f"Agent seeded with initial task: {initial_task}")
 
     def step(self) -> bool:
-        """Execute one full cycle of the agent loop."""
-        # Early exit on HALT policy (irreversible escalation)
+        """Execute one full control cycle."""
+        # Irreversible policy upgrades only
         recommended_mode = self.drift.get_policy_mode()
         if _POLICY_ORDER[recommended_mode] > _POLICY_ORDER[self.current_policy_mode]:
             self.current_policy_mode = recommended_mode
             self.config = replace(self.config, policy_mode=recommended_mode)
-            self.drift.config = self.config  # Invariant: DriftMonitor must always observe the same config as the agent. Sync only on irreversible policy upgrades to prevent silent divergence.
+
+            # Invariant: DriftMonitor must observe the same config as the agent
+            self.drift.config = self.config
+
             logger.info(f"Policy upgrade: {self.current_policy_mode.name}")
 
         if self.current_policy_mode == PolicyMode.HALT:
-            logger.critical("Policy mode: HALT - stopping agent")
+            logger.critical("Policy mode HALT — stopping agent")
             return False
 
         task = self.queue.pop()
         if not task:
-            logger.info("Task queue empty — nothing to do this cycle")
+            logger.info("Task queue empty — nothing to do")
             return False
 
         task_id = task["id"]
         task_text = task["text"]
 
-        # Record PREDICTED state
         self.memory.record(
             task_id=task_id,
             task_text=task_text,
@@ -115,10 +124,10 @@ class EBACoreAgent:
             outcome="",
             success=False,
             feedback="",
-            state=TaskState.PREDICTED
+            state=TaskState.PREDICTED,
         )
 
-        # 1. Predict expected outcome
+        # 1. Prediction
         prediction = generate_prediction(
             task_text=task_text,
             objective=self.objective,
@@ -127,10 +136,10 @@ class EBACoreAgent:
             config=self.config,
         )
 
-        # 2. Execute the task using the execution seam (Phase 3: gate execution on DEFERRED in ENFORCED mode)
+        # 2. Execution (policy-gated)
         recommended_breadth = get_recommended_breadth(
-            confidence=self.current_confidence,  # Pre-computed (placeholder for future rolling)
-            policy_mode=self.current_policy_mode
+            confidence=self.current_confidence,
+            policy_mode=self.current_policy_mode,
         )
 
         if should_execute(self.current_policy_mode, recommended_breadth):
@@ -144,20 +153,19 @@ class EBACoreAgent:
                     "confidence": self.current_confidence,
                 },
             )
-            outcome = ""  # No real outcome — placeholder
+            outcome = ""
 
-        # Record EXECUTED state (even if skipped)
         self.memory.record(
             task_id=task_id,
             task_text=task_text,
             prediction=prediction,
             outcome=outcome,
-            success=False,  # Updated below after critic
+            success=False,
             feedback="",
-            state=TaskState.EXECUTED
+            state=TaskState.EXECUTED,
         )
 
-        # 3. Critic evaluation
+        # 3. Critic
         success, feedback, error = critic_evaluate(
             task_text=task_text,
             prediction=prediction,
@@ -166,15 +174,14 @@ class EBACoreAgent:
             llm_call=self.llm,
         )
 
-        # Final state after critic
-        if success:
-            final_state = TaskState.SUCCEEDED
-        elif feedback:  # non-empty feedback currently treated as critic rejection
-            final_state = TaskState.REJECTED_BY_CRITIC
-        else:
-            final_state = TaskState.FAILED
+        final_state = (
+            TaskState.SUCCEEDED
+            if success
+            else TaskState.REJECTED_BY_CRITIC
+            if feedback
+            else TaskState.FAILED
+        )
 
-        # Record final outcome
         self.memory.record(
             task_id=task_id,
             task_text=task_text,
@@ -182,41 +189,34 @@ class EBACoreAgent:
             outcome=outcome,
             success=success,
             feedback=feedback,
-            state=final_state
+            state=final_state,
         )
 
-        # 4. Drift checks
+        # 4. Drift tracking
         perceptual_drift = self.drift.record_error(error)
-
-        # Real numeric feasibility check
-        was_numeric = is_numeric_feasible(prediction, outcome)
-        self.drift.record_feasibility(was_numeric, success)
+        feasible = is_numeric_feasible(prediction, outcome)
+        self.drift.record_feasibility(feasible, success)
 
         if perceptual_drift:
-            logger.warning(f"Perceptual drift detected on task {task_id}")
             self.drift.register_drift()
         else:
             self.drift.clear_streak()
 
         if self.drift.drift_streak > self.config.max_drift_streak:
-            logger.critical("Repeated drift streaks detected — halting agent")
+            logger.critical("Repeated drift detected — halting agent")
             return False
 
-        # TODO: record TaskState.DEFERRED when policy halts execution
-
-        # 5. Check if goal achieved
-        goal_prompt = format_prompt(GOAL_ACHIEVED_PROMPT, objective=self.objective, result=outcome)
-        goal_response = self.llm(goal_prompt).strip()
-        if "YES" in goal_response.upper():
+        # 5. Goal check
+        goal_prompt = format_prompt(
+            GOAL_ACHIEVED_PROMPT,
+            objective=self.objective,
+            result=outcome,
+        )
+        if "YES" in self.llm(goal_prompt).upper():
             logger.info("Goal achieved — stopping early")
             return False
 
-        # 6. Generate subtasks with safe parsing (Phase 3: route subtask generation through enforcement decision helper)
-        recommended_breadth = get_recommended_breadth(
-            confidence=self.current_confidence,
-            policy_mode=self.current_policy_mode
-        )
-
+        # 6. Subtask generation (policy-gated)
         if should_execute(self.current_policy_mode, recommended_breadth):
             subtasks = generate_subtasks(
                 current_task=task_text,
@@ -224,37 +224,26 @@ class EBACoreAgent:
                 llm_call=self.llm,
                 max_subtasks=5,
             )
-            logger.info(f"Generated {len(subtasks)} subtasks")
 
             for sub in subtasks:
                 sub_id = generate_id()
                 self.queue.push({"id": sub_id, "text": sub})
-                self._record_task_created(sub_id, sub)  # Record CREATED for new subtasks
-        else:
-            logger.info(
-                "Subtask generation skipped",
-                extra={
-                    "policy_mode": self.current_policy_mode.name,
-                    "recommendation": recommended_breadth,
-                    "confidence": self.current_confidence,
-                },
-            )
+                self._record_task_created(sub_id, sub)
 
         self.cycles += 1
 
-        # 7. Periodic guard check
+        # 7. Periodic guard
         if self.cycles % self.config.guard_interval == 0:
             if self.drift.severe():
-                logger.error("Severe instability detected — performing partial reset")
+                logger.error("Severe instability detected — resetting drift monitor")
                 self.drift = DriftMonitor(config=self.config)
 
         return True
 
     def run(self) -> None:
-        """Run the agent until halt condition or max iterations reached."""
-        logger.info(f"Starting EBA run with objective: {self.objective}")
+        """Run the agent until halt or max iterations."""
+        logger.info(f"Starting ECK run with objective: {self.objective}")
         while self.cycles < self.config.max_iterations:
             if not self.step():
                 break
-        logger.info(f"EBA run completed after {self.cycles} cycles")
-
+        logger.info(f"ECK run completed after {self.cycles} cycles")
