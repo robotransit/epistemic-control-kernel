@@ -79,4 +79,3 @@ class EBACoreConfig:
             return MappingProxyType({"halt": True})
 
         raise ValueError(f"Unknown policy mode: {self.policy_mode}")
-
