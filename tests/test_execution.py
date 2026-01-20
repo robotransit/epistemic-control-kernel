@@ -1,6 +1,4 @@
-```
-python
-from eba.execution import execute_task
+from eck.execution import execute_task
 
 def dummy_llm(prompt: str) -> str:
     """Dummy LLM returning messy whitespace to test normalization."""
@@ -21,4 +19,3 @@ def test_execute_task_with_calculator_error():
 def test_execute_task_with_tools_falls_back_to_llm():
     outcome = execute_task("Just a normal task", dummy_llm, use_tools=True)
     assert outcome == "LLM response with extra spaces"  # Still normalized
-```
