@@ -1,13 +1,12 @@
-```
-python
 # examples/basic_run.py
-# Simple runnable demo of EBA (Enhanced BabyAGI)
+# Simple runnable demo of ECK (Epistemic Control Kernel)
 
 # IMPORTANT NOTE:
-# This example demonstrates the EBA control loop only.
+# This example demonstrates the ECK control loop only.
 # The dummy LLM does not perform reasoning or task execution — it returns fixed responses.
 
-from eba.agent import EBACoreAgent
+from eck.agent import ECKAgent
+
 
 def dummy_llm_call(prompt: str) -> str:
     """
@@ -22,13 +21,14 @@ def dummy_llm_call(prompt: str) -> str:
     # Fixed responses (always the same, no branching)
     return "This is a fixed dummy response."
 
-if __name__ == "__main__":
-    objective = "Demonstrate the EBA control loop safely with a fixed dummy LLM"
 
-    print(f"Starting EBA demo with objective: {objective}")
+if __name__ == "__main__":
+    objective = "Demonstrate the ECK control loop safely with a fixed dummy LLM"
+
+    print(f"Starting ECK demo with objective: {objective}")
 
     # Create the agent with dummy LLM
-    agent = EBACoreAgent(
+    agent = ECKAgent(
         objective=objective,
         llm_call=dummy_llm_call,
     )
@@ -40,4 +40,4 @@ if __name__ == "__main__":
     agent.run()
 
     print("Demo run completed.")
-```
+
