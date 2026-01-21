@@ -1,5 +1,5 @@
 """
-Prompt templates and formatting utilities for EBA LLM calls.
+Prompt templates and formatting utilities for ECK LLM calls.
 
 All prompts are defined as constants here for easy maintenance and testing.
 """
@@ -75,3 +75,4 @@ Example: ["Highest priority", "Next", ...]
 def format_prompt(template: str, **kwargs) -> str:
     """Format a prompt template with variables."""
     return template.format(**kwargs)
+
