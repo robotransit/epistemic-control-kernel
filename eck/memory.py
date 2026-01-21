@@ -3,7 +3,8 @@ from typing import Dict, Optional, Any, List
 
 from .task import TaskState
 from .utils import score_memory_entry
-from .config import PolicyMode, EBACoreConfig
+from .config import PolicyMode, ECKConfig
+
 
 class WorldModel:
     """
@@ -130,7 +131,7 @@ class WorldModel:
         self,
         task_text: str,
         policy_mode: PolicyMode,
-        config: EBACoreConfig,
+        config: ECKConfig,
         *,
         threshold: float = 0.7,
         limit: int = 5,
@@ -152,7 +153,6 @@ class WorldModel:
             prefer_failures=prefer_failures,
         )
 
-        # Score each entry
         scored = []
         for entry in candidates:
             score = score_memory_entry(
@@ -162,21 +162,19 @@ class WorldModel:
                 config=config,
             )
             if score > 0:
-                entry_with_score = dict(entry)  # shallow copy
+                entry_with_score = dict(entry)
                 entry_with_score["score"] = score
                 scored.append(entry_with_score)
 
-        # Sort by score descending
         scored.sort(key=lambda e: e["score"], reverse=True)
         return scored[:limit]
 
-    # Deprecated: use all_tasks() instead
-    # def get_entries(self) -> Dict[str, Dict[str, Any]]:
-    #     return dict(self.tasks)
-
     def all_tasks(self) -> Dict[str, Dict[str, Any]]:
         """Return a copy of the entire task history with serialized timestamps."""
-        return {k: dict(v, timestamp=v["timestamp"].isoformat()) for k, v in self.tasks.items()}
+        return {
+            k: dict(v, timestamp=v["timestamp"].isoformat())
+            for k, v in self.tasks.items()
+        }
 
     def __len__(self) -> int:
         """Number of recorded tasks."""
