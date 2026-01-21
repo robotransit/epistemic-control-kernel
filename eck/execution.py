@@ -42,7 +42,7 @@ def execute_task(
     """
     Execute a task and return the outcome string.
 
-    This is the main execution seam for EBA Core.
+    This is the main execution seam for the Epistemic Control Kernel (ECK).
     Supports optional dummy calculator tool for seam validation.
     """
     if use_tools:
