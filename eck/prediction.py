@@ -7,13 +7,14 @@ from typing import Callable
 
 from .prompts import format_prompt, PREDICTION_PROMPT_TEMPLATE
 from .memory import WorldModel
-from .config import EBACoreConfig
+from .config import ECKConfig
+
 
 def build_prediction_context(
     task_text: str,
     objective: str,
     memory: WorldModel,
-    config: EBACoreConfig,
+    config: ECKConfig,
 ) -> str:
     """
     Build optional context from relevant past task outcomes for the prediction prompt.
@@ -47,7 +48,10 @@ def build_prediction_context(
         feedback = entry.get("feedback", "(no feedback)")[:100]
         if len(feedback) == 100:
             feedback += "..."
-        line = f"- Task: {task_str} | State: {state} | Outcome: {outcome_str} | Success: {success} | Feedback: {feedback}"
+        line = (
+            f"- Task: {task_str} | State: {state} | "
+            f"Outcome: {outcome_str} | Success: {success} | Feedback: {feedback}"
+        )
         context_lines.append(line)
 
     return "\n".join(context_lines)
@@ -58,7 +62,7 @@ def generate_prediction(
     objective: str,
     llm_call: Callable[[str], str],
     memory: WorldModel,
-    config: EBACoreConfig,
+    config: ECKConfig,
     max_length: int = 200,
 ) -> str:
     """
@@ -76,13 +80,13 @@ def generate_prediction(
         PREDICTION_PROMPT_TEMPLATE,
         memory_context=memory_context,
         objective=objective,
-        task_text=task_text
+        task_text=task_text,
     )
 
     raw_prediction = llm_call(prompt).strip()
 
     # Normalize internal whitespace (collapse multiples, remove newlines/tabs)
-    raw_prediction = ' '.join(raw_prediction.split())
+    raw_prediction = " ".join(raw_prediction.split())
 
     # Protect against empty/whitespace-only output
     if not raw_prediction:
@@ -93,3 +97,4 @@ def generate_prediction(
         raw_prediction = raw_prediction[:max_length].rstrip(" .,!?") + "..."
 
     return raw_prediction
+
