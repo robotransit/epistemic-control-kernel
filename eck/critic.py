@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Tuple, Callable, Optional
 
-logger = logging.getLogger("eba-core")
+logger = logging.getLogger("eck-core")
 
 
 def critic_evaluate(
@@ -52,14 +52,14 @@ Respond with true if the result meaningfully advances the objective.
     success1, feedback1 = _parse_critic_response(response1)
 
     if not enable_cross_validation:
-        error = 1.0 if not success1 else 0.0  # Binary for now - TODO: upgrade to graded/semantic score
+        error = 1.0 if not success1 else 0.0
         return success1, feedback1, error
 
     # Second critic call for consensus
     response2 = llm_call(prompt)
     success2, feedback2 = _parse_critic_response(response2)
 
-    final_success = success1 and success2  # Strict AND
+    final_success = success1 and success2
     final_feedback = f"{feedback1} | Consensus: {success2}"
 
     if success1 != success2:
@@ -71,9 +71,7 @@ Respond with true if the result meaningfully advances the objective.
             final_success = False
             final_feedback += " | External verification failed"
 
-    # Error score: binary for now, but typed float for future graded evolution
-    error = 1.0 if not final_success else 0.0  # TODO: upgrade to semantic/graded score (0.0-1.0)
-
+    error = 1.0 if not final_success else 0.0
     return final_success, final_feedback, error
 
 
