@@ -1,1 +1,1 @@
-# Data models for EBA (Task, WorldModel, etc)
+# Data models for ECK (Task, WorldModel, etc)
