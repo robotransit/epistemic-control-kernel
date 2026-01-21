@@ -3,21 +3,21 @@ from collections import deque
 from typing import List
 
 from .utils import z_score, safe_mean
-from .config import EBACoreConfig, PolicyMode
+from .config import ECKConfig, PolicyMode
 
 
 class DriftMonitor:
     """
-    Monitors multiple levels of drift in EBA execution.
-    Tracks perceptual error outliers, goal drift streaks, and numeric feasibility confidence.
-    Supports dynamic bias adjustment and severity checks for resets.
+    Monitors multiple levels of drift in ECK execution.
+    Tracks perceptual error outliers, drift streaks, and numeric feasibility confidence.
+    Supports severity checks for policy escalation.
     """
 
-    def __init__(self, config: EBACoreConfig = None):
+    def __init__(self, config: ECKConfig = None):
         """
         Initialize drift monitor with configurable thresholds.
         """
-        self.config = config or EBACoreConfig()
+        self.config = config or ECKConfig()
 
         self.error_history: List[float] = []
         self.last_error_z: float = 0.0  # Track latest z-score for policy decisions
@@ -39,7 +39,7 @@ class DriftMonitor:
         mean = statistics.mean(recent)
         std = statistics.pstdev(recent) or 1e-8
         z = abs(z_score(error, mean, std))
-        self.last_error_z = z  # Update latest z-score
+        self.last_error_z = z
 
         return z > self.config.error_z_threshold
 
@@ -81,21 +81,12 @@ class DriftMonitor:
         """
         Determine recommended policy mode based on current drift signals.
 
-        Uses public transition thresholds from config to decide mode.
-        Returns NORMAL by default, CONSERVATIVE on moderate signals,
-        HALT on severe/repeated drift.
+        Returns NORMAL by default.
+        Escalates to HALT on severe or repeated drift signals.
         """
-        # Respect already-escalated policy (do not downgrade or re-evaluate)
+        # Respect already-escalated policy (do not downgrade)
         if self.config.policy_mode == PolicyMode.HALT:
             return PolicyMode.HALT
-
-        # TODO (Phase 3 candidate): Legacy drift-based hard halt
-        # This halt predates policy enforcement (Commit 4c) and currently
-        # serves as a safety backstop. Once execution gating via policy
-        # enforcement is proven across tooling and external calls, this
-        # mechanism may become redundant and can be retired or downgraded
-        # to advisory-only. Until then, it intentionally remains as
-        # layered defense.
 
         # HALT conditions (highest priority)
         if (
@@ -106,6 +97,4 @@ class DriftMonitor:
             return PolicyMode.HALT
 
         return PolicyMode.NORMAL
-
-
-        
+       
