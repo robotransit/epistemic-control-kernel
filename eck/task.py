@@ -2,7 +2,7 @@ from enum import Enum
 
 class TaskState(Enum):
     """
-    Canonical lifecycle states for a task within EBA.
+    Canonical lifecycle states for a task within ECK.
 
     States describe observable task progression and outcomes.
     Causes and interpretations are handled elsewhere (critic, drift, policy).
