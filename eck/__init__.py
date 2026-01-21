@@ -1,5 +1,5 @@
 """
-EBA Core — Enhanced BabyAGI reliability kernel.
+Epistemic Control Kernel (ECK).
 
 Provides:
 
@@ -14,10 +14,10 @@ Guard rails & reset logic
 
 version = "0.1.0"
 
-from .agent import EBACoreAgent
-from .config import EBACoreConfig
+from .agent import ECKAgent
+from .config import ECKConfig
 
 all = [
-"EBACoreAgent",
-"EBACoreConfig",
+    "ECKAgent",
+    "ECKConfig",
 ]
