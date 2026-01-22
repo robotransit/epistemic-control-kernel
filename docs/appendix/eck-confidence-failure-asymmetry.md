@@ -1,4 +1,4 @@
-# EBA Confidence — Failure Asymmetry
+# ECK Confidence — Failure Asymmetry
 
 This appendix explains why confidence decreases more strongly on failures than it increases on successes.
 
@@ -72,10 +72,10 @@ Those belong to future implementation commits.
 
 ## See also
 
-eba-confidence.md — general confidence semantics  
-eba-rolling-confidence-semantics.md — rolling update rules  
-eba-confidence-breadth.md — confidence-to-breadth mapping  
-eba-confidence-observability.md — logging and attribution  
-eba-policy-modes.md — policy modulation of confidence influence  
+eck-confidence.md — general confidence semantics  
+eck-rolling-confidence-semantics.md — rolling update rules  
+eck-confidence-breadth.md — confidence-to-breadth mapping  
+eck-confidence-observability.md — logging and attribution  
+eck-policy-modes.md — policy modulation of confidence influence  
 
 This appendix is semantics only — it justifies asymmetry as a design invariant.
