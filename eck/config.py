@@ -18,9 +18,9 @@ class PolicyMode(Enum):
 
 
 @dataclass(frozen=True)
-class EBACoreConfig:
+class ECKConfig:
     """
-    Central configuration for EBA (Enhanced BabyAGI).
+    Central configuration for ECK (Epistemic Control Kernel).
     All thresholds, limits, and policy overrides are defined here.
 
     Consumers **must** use effective_policy(); direct access to _conservative_* fields is not policy-aware.
