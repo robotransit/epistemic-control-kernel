@@ -1,4 +1,4 @@
-# EBA Confidence → Breadth Defaults (Semantics Only)
+# ECK Confidence → Breadth Defaults (Semantics Only)
 
 This document defines how confidence influences breadth defaults — semantics only, no APIs, no implementation, no wiring.
 
@@ -83,10 +83,10 @@ This resolver is a **translation layer** — confidence (epistemic signal) → b
 It is **not** a decision engine.
 
 ## See also 
-eba-confidence.md — general confidence semantics 
-eba-rolling-confidence-semantics.md — rolling update rules 
-eba-policy-modes.md — policy modulation of confidence influence
-appendix/eba-confidence-failure-asymmetry.md — justification for asymmetric confidence updates
+eck-confidence.md — general confidence semantics 
+eck-rolling-confidence-semantics.md — rolling update rules 
+eck-policy-modes.md — policy modulation of confidence influence
+appendix/eck-confidence-failure-asymmetry.md — justification for asymmetric confidence updates
 
 ## Relationship to Other Commits
 
