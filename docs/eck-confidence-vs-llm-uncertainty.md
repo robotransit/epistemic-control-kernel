@@ -1,6 +1,6 @@
-# EBA Confidence vs LLM Uncertainty
+# ECK Confidence vs LLM Uncertainty
 
-LLM uncertainty and EBA confidence are related but operate at fundamentally different layers.
+LLM uncertainty and ECK confidence are related but operate at fundamentally different layers.
 
 ## LLM Uncertainty (Internal, Token-Level)
 
@@ -15,9 +15,9 @@ Result:
 - Uncertainty is suppressed or hidden behind “safe” answers
 - Novelty is dampened by statistical penalties on rare tokens
 
-## EBA Confidence (External, Epistemic)
+## ECK Confidence (External, Epistemic)
 
-EBA confidence is an **explicit, externalized epistemic signal** that operates at the:
+ECK confidence is an **explicit, externalized epistemic signal** that operates at the:
 - Task level
 - Reasoning step level
 - Strategy level
@@ -38,9 +38,9 @@ Key differences:
 | Memory                        | Transient, token-context only            | Persistent, inspectable, editable                |
 | Failure Attribution           | Cannot explain hesitation                | Must explain ("because of X, Y, Z")              |
 
-## Why EBA Confidence Must Exist
+## Why ECK Confidence Must Exist
 
-LLMs optimize for “sounding correct” and fluency — EBA governs **belief hygiene**, not belief content.
+LLMs optimize for “sounding correct” and fluency — ECK governs **belief hygiene**, not belief content.
 
 Even perfectly calibrated models cannot expose or modify the epistemic assumptions that govern when and how inference should be expanded or halted.
 
@@ -50,6 +50,6 @@ Without external epistemic control:
 - Novelty is penalized without recourse
 - The agent cannot explain why it hesitated
 
-EBA externalizes and exposes implicit epistemic control dynamics that modern LLMs possess internally, but do not make inspectable or reusable.
+ECK externalizes and exposes implicit epistemic control dynamics that modern LLMs possess internally, but do not make inspectable or reusable.
 
-If EBA ever loses this separation, it becomes redundant.
+If ECK ever loses this separation, it becomes redundant.
