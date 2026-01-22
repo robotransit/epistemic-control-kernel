@@ -1,10 +1,10 @@
-# EBA Rolling Confidence Semantics
+# ECK Rolling Confidence Semantics
 
 This document defines how rolling confidence is computed and used — semantics only, no APIs, no implementation details.
 
 ## Confidence Defined
 
-Rolling confidence (hereafter “confidence”) ∈ [0, 1] (see docs/eba-confidence.md)
+Rolling confidence (hereafter “confidence”) ∈ [0, 1] (see docs/eck-confidence.md)
 
 Confidence is an epistemic posture signal:  
 “How justified am I, right now, in expanding the search space?”
@@ -60,8 +60,8 @@ Alternative (future): Beta posterior (α successes, β failures) for Bayesian un
 
 ## Relationship to Other Docs
 
-- **eba-confidence.md** — general confidence semantics  
-- **eba-confidence-breadth.md** — how confidence maps to breadth defaults  
-- **eba-policy-modes.md** — how policy mode modulates confidence influence  
+- **eck-confidence.md** — general confidence semantics  
+- **eck-confidence-breadth.md** — how confidence maps to breadth defaults  
+- **eck-policy-modes.md** — how policy mode modulates confidence influence  
 
 This document defines semantics only — no APIs, no wiring, no forward commitments.
