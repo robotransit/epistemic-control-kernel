@@ -1,8 +1,8 @@
-# Contributing to EBA Core
+# Contributing to Epistemic Control Kernel (ECK)
 
-Thank you for your interest in contributing to **EBA Core**.
+Thank you for your interest in contributing to **Epistemic Control Kernel (ECK)**.
 
-EBA Core is an experimental, reliability-focused autonomous agent kernel.  
+ECK is an experimental, reliability-focused autonomous agent kernel.  
 Contributions are welcome, but the project prioritizes **clarity, safety, and explicit control flow** over feature velocity.
 
 ## Project Philosophy
@@ -39,12 +39,11 @@ If you are unsure whether something fits, please open an issue to discuss it fir
 ## Development Setup
 
 ```
-git clone https://github.com/robotransit/eba-core.git
-cd eba-core
+git clone https://github.com/robotransit/epistemic-control-kernel.git
+cd epistemic-control-kernel
 pip install -e .
 ```
-
-'Python' 3.10+ is required.
+Python 3.10+ is required.
 
 ## Testing
 
@@ -52,10 +51,6 @@ We value tests that verify **reliability and safety behaviour**.
 If you add or modify core logic, please include or update tests where appropriate.
 
 Tests are located in the `tests/` directory and can be run with:
-
-```
-pytest
-```
 
 ## Style & Guidelines
 
