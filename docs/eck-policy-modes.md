@@ -27,16 +27,11 @@ Policy must remain inspectable and modifiable without touching reasoning or memo
 
 ## 3. Policy Modes (Canonical Set)
 
-### 3.1 ADVISORY Mode
+### 3.1 NORMAL Mode
 
-Intent: Observe-only, no behavioral authority.  
-
-Confidence is computed and exposed.  
-No defaults are altered.  
-No constraints are applied.  
-Prediction may log or surface confidence but must not change behavior.  
-
-Use-case: evaluation, introspection, debugging, research.
+Intent: Full agent operation (default).  
+Confidence has no influence.  
+No recommendations or constraints applied.
 
 ### 3.2 GUIDED Mode
 
@@ -47,7 +42,7 @@ No hard limits are imposed.
 Prediction may override defaults freely.  
 Novelty is discouraged, never blocked.  
 
-This is the intended default operational mode.
+This is the recommended default operational mode.
 
 ### 3.3 ENFORCED Mode
 
@@ -60,6 +55,12 @@ Violations must be explicit and logged.
 Enforcement must be attributable to policy mode, not model behavior.  
 
 Used for high-risk, high-cost, or safety-critical domains.
+
+### 3.4 HALT Mode
+
+Intent: Complete halt (irreversible until manual reset).  
+No further task generation or execution.  
+All effects short-circuited.
 
 ## 4. Soft vs Hard Gating
 
@@ -120,9 +121,8 @@ Policy does not:
 - Substitute for model uncertainty  
 - Decide final answers  
 
-## 9. Relationship to Future Phases (Non-binding)
+## 9. Relationship to Other Phases (Non-binding)
 
-Phase 2.2 will consume policy outputs.  
-This document intentionally defines semantics only.  
-APIs and wiring are explicitly deferred.  
-No forward commitments beyond that.
+This document defines semantics only.  
+All runtime wiring and enforcement are complete (see Phase 2.2 and Phase 3).  
+No further commitments beyond current implementation.
