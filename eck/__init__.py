@@ -17,7 +17,7 @@ version = "0.1.0"
 from .agent import ECKAgent
 from .config import ECKConfig
 
-all = [
+__all__ = [
     "ECKAgent",
     "ECKConfig",
 ]
