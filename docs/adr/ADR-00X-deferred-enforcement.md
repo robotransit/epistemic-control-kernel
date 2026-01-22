@@ -2,12 +2,12 @@ ADR-00X: Deferred Enforcement via Breadth Recommendation
 
 Status: Accepted
 Date: 2026-01-17
-Deciders: EBA Core Maintainers
+Deciders: ECK Maintainers
 Related: Commit 4b (Resolver), Commit 4c (Enforcement), Confidence/Breadth Docs
 
 Context
 
-EBA introduces a confidence signal intended to influence system behavior.
+ECK introduces a confidence signal intended to influence system behavior.
 However, coupling confidence directly to enforcement or suppression introduces significant risks:
 
 - Premature or silent behavioral restriction
@@ -19,7 +19,7 @@ However, coupling confidence directly to enforcement or suppression introduces s
 To mitigate these risks, the project deliberately separates recommendation from enforcement.
 
 Commit 4b introduces a pure resolver that maps (confidence, policy_mode) to a recommended breadth.
-Commit 4c is intended to introduce hard enforcement, but only after the system has demonstrated correctness, observability, and semantic stability.
+Commit 4c introduced hard enforcement, but only after the system demonstrated correctness, observability, and semantic stability.
 
 This ADR formalizes that separation and constrains how enforcement may be introduced.
 
@@ -49,7 +49,7 @@ The following constraints are binding:
 
 - Confidence must not directly cause behavior changes without passing through the resolver.
 - The resolver must remain pure until explicitly superseded by a later, explicitly approved ADR.
-- NORMAL mode must remain behaviorally identical to pre-confidence EBA.
+- NORMAL mode must remain behaviorally identical to pre-confidence ECK.
 - GUIDED mode may influence defaults but must not apply hard constraints.
 - ENFORCED mode is the only mode where hard gating is permitted.
 - HALT mode must short-circuit generation entirely.
