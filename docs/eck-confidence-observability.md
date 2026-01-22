@@ -1,4 +1,4 @@
-# EBA Confidence Observability
+# ECK Confidence Observability
 
 This document defines the minimum inspection surface for rolling confidence.
 
@@ -82,10 +82,10 @@ Those belong to future implementation commits.
 
 ## See also
 
-eba-confidence.md — general confidence semantics  
-eba-rolling-confidence-semantics.md — rolling update rules  
-eba-confidence-breadth.md — confidence-to-breadth mapping  
-eba-policy-modes.md — policy modulation of confidence influence  
-appendix/eba-confidence-failure-asymmetry.md — justification for asymmetric confidence updates  
+eck-confidence.md — general confidence semantics  
+eck-rolling-confidence-semantics.md — rolling update rules  
+eck-confidence-breadth.md — confidence-to-breadth mapping  
+eck-policy-modes.md — policy modulation of confidence influence  
+appendix/eck-confidence-failure-asymmetry.md — justification for asymmetric confidence updates  
 
 This document defines observability semantics only — no APIs, no implementation, no forward commitments.
