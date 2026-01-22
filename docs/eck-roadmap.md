@@ -1,4 +1,4 @@
-# EBA Canonical Roadmap
+# ECK Canonical Roadmap
 
 ## Phase 2 — Epistemic Memory & Control
 
@@ -34,15 +34,15 @@ Phase 2.1
 *Define epistemic signals before wiring behavior*
 
 Phase 2.1.5  
-├─ ✔ docs/eba-confidence.md  
+├─ ✔ docs/eck-confidence.md  
 │    ├─ Confidence definition (epistemic, not correctness)  
 │    ├─ Bounds, invariants, non-goals  
 │    └─ Model-agnostic semantics  
 │  
-├─ ✔ docs/eba-confidence-vs-llm-uncertainty.md  
+├─ ✔ docs/eck-confidence-vs-llm-uncertainty.md  
 │    ├─ External vs internal uncertainty  
 │    ├─ Task-level vs token-level  
-│    └─ Why EBA must remain separate  
+│    └─ Why ECK must remain separate  
 │  
 └─ ✔ Cross-reference hygiene  
      - Consistent terminology  
@@ -53,7 +53,7 @@ Phase 2.1.5
 *Formalize soft vs hard control before enforcement*
 
 Phase 2.1.75  
-└─ ⏳ docs/eba-policy-modes.md  
+└─ ⏳ docs/eck-policy-modes.md  
      ├─ Policy modes  
      │    - ADVISORY  
      │    - GUIDED  
