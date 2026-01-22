@@ -1,29 +1,38 @@
 [project]
 name = "epistemic-control-kernel"
 dynamic = ["version"]
-description = "Epistemic Control Kernel: A model-agnostic reliability layer for reasoning systems with explicit confidence, drift, and policy control"
-keywords = ["epistemic-control", "reliability-kernel", "policy-gating", "uncertainty-awareness", "self-regulation", "agent-safety", "drift-detection",  "reasoning-governance"]
+description = "A reliability-focused control kernel for autonomous agents with prediction, execution, evaluation, drift detection, and policy-based gating."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [{name = "robotransit"}]
+license = {file = "LICENSE"}
+keywords = [
+    "epistemic-control",
+    "agent",
+    "reliability",
+    "drift-detection",
+    "self-regulation",
+    "autonomous-systems",
+]
+authors = [
+    {name = "robotransit"}
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Artificial Intelligence",
 ]
-dependencies = [
-    "langchain>=0.2",
-    "langchain-openai",
-    "sentence-transformers",
-    "numpy",
-    "pinecone-client",  # optional
+
+[project.optional-dependencies]
+openai = [
+    "openai>=1.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "eck/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["eck"]
