@@ -183,4 +183,3 @@ Additional dependencies may be introduced **only** when they provide:
 ## License
 
 MIT License — see the `LICENSE` file for details.
-"```"
