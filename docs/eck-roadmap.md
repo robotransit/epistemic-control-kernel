@@ -48,14 +48,14 @@ Phase 2.1.5
      - Consistent terminology  
      - Explicit separation preserved  
 
-### Phase 2.1.75 — Policy Semantics (PLANNED — DOCS ONLY)
+### Phase 2.1.75 — Policy Semantics (COMPLETED)
 
 *Formalize soft vs hard control before enforcement*
 
 Phase 2.1.75  
-└─ ⏳ docs/eck-policy-modes.md  
+└─ ✔ docs/eck-policy-modes.md  
      ├─ Policy modes  
-     │    - ADVISORY  
+     │    - NORMAL  
      │    - GUIDED  
      │    - ENFORCED  
      │  
@@ -72,25 +72,38 @@ Phase 2.1.75
 
 📌 No runtime behavior in this phase.
 
-### Phase 2.2 — Memory-Aware Prediction (NOT STARTED)
+### Phase 2.2 — Memory-Aware Prediction (COMPLETED)
 
 *Behavior informed by confidence — policy-controlled*
 
 Phase 2.2  
-├─ ⏳ Commit 5a  Prediction receives confidence + policy mode (read-only)  
+├─ ✔ Commit 4a  Prediction receives confidence + policy mode (read-only)  
 │               - retrieve_scored() used  
 │               - No enforcement  
 │               - Observability only  
 │  
-├─ ⏳ Commit 5b  Policy interprets confidence → breadth defaults  
+├─ ✔ Commit 4b  Policy interprets confidence → breadth defaults  
 │               - Soft gating  
 │               - Breadth / expansion hints  
 │               - No hard limits  
 │  
-└─ ⏳ Commit 5c  Policy enforces constraints under ENFORCED mode  
-                - Hard gating  
-                - Deferral / halt permitted  
-                - Negative memory dominance  
+└─ ✔ Commit 4c  Introduce enforcement semantics (bridge commit)  
+                - Enforcement exists but is not yet surface-complete  
+
+## Phase 3 — Consequence Surface Completion (COMPLETED)
+
+*Extend enforcement to all execution seams*
+
+Phase 3  
+├─ ✔ Step 1   Generalize enforcement decision (should_execute helper)  
+│  
+├─ ✔ Step 2   Route subtask generation through helper  
+│  
+├─ ✔ Step 3   Gate task execution through helper  
+│  
+├─ ✔ Step 4   Add execution-level enforcement test  
+│  
+└─ ✔ Step 5   Drift/config synchronization cleanup  
 
 ## Structural Invariants (Global)
 
@@ -99,6 +112,7 @@ Phase 2.2
 - Policy interprets, prediction observes  
 - Enforcement is explicit, mode-gated  
 - Novelty is suppressible but never forbidden  
+- Locked globals (e.g. logger name) are immutable once agreed  
 
 ## Layering Summary
 
@@ -106,7 +120,8 @@ Phase 2.2
 |------------------------|----------------|--------|----------------------------------------|
 | Infrastructure         | Phase 2.1      | ✅     | Persistent, scoreable, read-only memory |
 | Semantics              | Phase 2.1.5    | ✅     | Define signals before wiring behavior  |
-| Policy                 | Phase 2.1.75   | ⏳     | Formalize soft vs hard control         |
-| Behavior               | Phase 2.2      | ⏳     | Confidence → controlled influence      |
+| Policy                 | Phase 2.1.75   | ✅     | Formalize soft vs hard control         |
+| Behavior               | Phase 2.2      | ✅     | Confidence → controlled influence      |
+| Consequences           | Phase 3        | ✅     | Extend enforcement to all effects      |
 
 Each layer is strictly dependent on the guarantees of the previous one; later phases must not retroactively alter earlier-layer invariants.
