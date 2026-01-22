@@ -23,7 +23,7 @@ from .task_generation import generate_subtasks
 from .execution import execute_task
 from .task import TaskState
 
-logging.getLogger("eck-core")
+logger = logging.getLogger("eck-core")
 
 
 # Policy ordering for safe, irreversible upgrades
