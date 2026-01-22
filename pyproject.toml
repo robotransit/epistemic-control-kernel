@@ -1,8 +1,8 @@
 [project]
-name = "eba-core"
+name = "eck"
 dynamic = ["version"]
-description = "Enhanced BabyAGI: A perceptually self-regulating autonomous agent with predictive foresight and drift detection"
-keywords = ["agent", "agi", "autonomous", "babyagi"]
+description = "Epistemic Control Kernel: A model-agnostic reliability layer for reasoning systems with explicit confidence, drift, and policy control"
+keywords = ["epistemic-control", "reliability-kernel", "policy-gating", "uncertainty-awareness", "self-regulation"]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -26,4 +26,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["eba"]
+packages = ["eck"]
