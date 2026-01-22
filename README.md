@@ -1,64 +1,98 @@
-# eba-core
+# Epistemic Control Kernel (ECK)
 
-**Enhanced BabyAGI** — a perceptually self-regulating autonomous agent with predictive foresight and drift detection.
+**Epistemic Control Kernel (ECK)** — a minimal, reliability-first control kernel for autonomous agents.
 
-EBA Core is an early-stage, framework-agnostic reliability kernel for autonomous agents.
-It focuses on explicit prediction–execution–evaluation loops, conservative defaults, and first-class drift handling.
+ECK is a framework-agnostic **control and observability core**, designed to sit *beneath* agent behaviour rather than define it.  
+It enforces explicit phase separation, records epistemic signals, detects drift, and provides **policy-gated control seams** without embedding planning, reasoning, or tool ideology.
+
+ECK prioritises:
+- observability before enforcement  
+- explicit state transitions  
+- testable, auditable invariants  
+- refusal to silently “do the wrong thing”
+
+This repository contains the **core kernel only** — not a full agent product.
+
+---
 
 ## Current Status (v0.1.x)
 
-**Implemented & stable components**  
-- Agent loop orchestration (`agent.py`)  
-- Prediction-before-execution discipline (`prediction.py`)  
-- Modular task generation and execution seams (`task_generation.py`, `execution.py`)  
-- Critic evaluation pipeline with consensus and verification hooks (`critic.py`)  
-- Drift monitoring (perceptual, streak, numeric feasibility bias) (`drift.py`)  
-- Safe JSON parsing and pessimistic fallbacks (`utils.py`)  
-- Typed config and minimal memory store (`config.py`, `memory.py`)
+ECK is in an **early but internally consistent** state.
 
-**Designed / Planned (not yet implemented)**  
-- Embedding-based proactive task filtering (objective–task similarity)
-- Full tool integration (execution seam is ready)  
-- External vector memory  
-- Multi-model or ensemble critics  
-- Adaptive threshold tuning  
+### Implemented & Stable
 
-**Current focus**  
-Reliability first: explicit phases, no silent hallucinations, clear halting conditions, and modular seams for future extensions.
+- Deterministic agent control loop (`agent.py`)
+- Explicit prediction → execution → evaluation phases
+- Policy-gated execution and subtask generation
+- Critic-mediated outcome evaluation
+- Drift monitoring (error signals, feasibility checks, streak tracking)
+- Append-only task memory with explicit task states
+- Bounded task queue
+- Centralised prompt templates
+- Minimal execution seam (LLM-first, tool-extensible)
+- Strict config-driven thresholds and limits
+
+### Explicitly Not Implemented (by design)
+
+- No planning engine
+- No hidden reasoning layer
+- No implicit tool use
+- No asynchronous or parallel execution
+- No task deduplication heuristics
+- No automatic “intelligence amplification”
+
+If something is not visible in code or tests, **it does not exist**.
+
+---
+
+## Design Philosophy
+
+ECK is built around **epistemic control**, not task throughput.
+
+Key principles:
+
+- **Explicit phases**  
+  Prediction, execution, and evaluation are separate and observable.
+
+- **Observability before enforcement**  
+  Signals (confidence, drift, feasibility) are recorded *before* they affect behaviour.
+
+- **No silent coupling**  
+  Confidence does not alter behaviour unless an explicit policy mode allows it.
+
+- **Single execution seam**  
+  All real-world effects flow through one narrow interface.
+
+- **Irreversible safety upgrades**  
+  Policy modes can only move in safer directions during runtime.
+
+---
 
 ## Architecture Overview
 
-EBA Core separates cognition from execution and control:
+ECK separates *cognition*, *control*, and *effects*.
 
-**Stateless cognitive functions**  
-(Pure transformations over text; behavior is entirely mediated by the provided LLM)  
-- `prediction.generate_prediction`  
+### Pure / Stateless Components
+(no side effects, no memory mutation)
+
+- `prediction.generate_prediction`
 - `task_generation.generate_subtasks`
 
-**Execution seam**  
-(Where real-world effects or tools may be invoked)  
+### Execution Seam
+(single, auditable effects boundary)
+
 - `execution.execute_task`
 
-**Stateful control & safety layer**  
-- `EBACoreAgent` (main loop and orchestration)  
-- `WorldModel` (task history & annotations)  
-- `DriftMonitor` (error tracking, drift detection, recovery)
+### Stateful Control Layer
 
-This design allows EBA Core to plug into any LLM stack (raw APIs, LangChain, LangGraph, etc.) without coupling to a specific framework, while keeping execution effects strictly isolated behind a single seam.
+- `ECKAgent` — orchestration and policy control
+- `WorldModel` — append-only task history
+- `DriftMonitor` — epistemic error & instability tracking
+- `TaskQueue` — bounded work queue
 
-## What EBA Core Is *Not*
+This architecture allows ECK to integrate with **any LLM stack** without inheriting framework assumptions.
 
-EBA Core is intentionally minimal and conservative. It is **not**:
-
-- A multi-agent framework
-- A parallel or asynchronous execution engine
-- A production-ready autonomous system
-- A tool-rich agent (tools are opt-in and currently minimal)
-- A LangChain/LangGraph replacement or wrapper
-- An opinionated UI or application
-- A complete agent with built-in planning or reasoning strategies
-
-EBA Core focuses on **reliability, explicit control flow, and drift-aware autonomy**, and is designed to be embedded into larger systems rather than used as a standalone product.
+---
 
 ## Policy Enforcement
 
@@ -69,77 +103,84 @@ When recommended breadth is DEFERRED, generation and execution are skipped for t
 - See Commit 4c for implementation details  
 - See tests/scratch_test_4c.py for a minimal proof-of-concept run demonstrating deferral  
 
-This completes the core reliability loop within EBA Core: detection → recommendation → consequence.
+This completes the core reliability loop within ECK: detection → recommendation → consequence.
+
+---
+
+## What ECK Is *Not*
+
+ECK is intentionally narrow.
+
+It is **not**:
+
+- A general agent framework
+- A planner or reasoning engine
+- A tool orchestration system
+- A LangChain / LangGraph replacement
+- A multi-agent system
+- A production-ready autonomous product
+- An opinionated AI ideology
+
+ECK exists to make agent behaviour **inspectable, interruptible, and correctable**.
+
+---
 
 ## Quick Start
 
-EBA Core requires you to supply your own LLM callable (e.g. OpenAI, Groq, local model).
-
-Minimal example (stub LLM):
+You must supply your own LLM callable.
 ```
-python
-from eba.agent import EBACoreAgent
+# First install the package locally
+# pip install -e .
 
-def my_llm(prompt: str) -> str:
-    return "stub response"  # Replace with real LLM call
+from eck.agent import ECKAgent
 
-agent = EBACoreAgent(
-    objective="Example objective - replace this!",
-    llm_call=my_llm,
+def llm(prompt: str) -> str:
+    return "stub response"
+
+agent = ECKAgent(
+    objective="Replace with a real objective",
+    llm_call=llm,
 )
 
-agent.seed()  # Starts with an initial task (or generate one automatically)
-agent.run()   # Runs until halt or max iterations
+agent.seed()
+agent.run()
 ```
-Note: This stub LLM does not perform real reasoning; it only demonstrates the EBA control flow.  
-See examples/ for progressively richer integrations (coming soon).
+⚠️ A stub LLM will not produce meaningful behaviour — this example demonstrates control flow only.
 
-### How to Run (Local / Minimal Setup)
-
-```
-git clone https://github.com/robotransit/eba-core.git
-cd eba-core
-pip install -e .
-```
-Then run your own script using the stub example above.
+---
 
 ## Project Structure
 
-EBA Core is organized as a Python package with a single core module folder and examples.
+### Core Package (`eck/`)
 
-**Core package (`eba/`)**  
-- `agent.py` → main loop orchestration  
-- `config.py` → typed thresholds & limits  
-- `prompts.py` → LLM prompt templates  
-- `utils.py` → safe helpers (parsing, numeric checks, etc.)  
-- `queue.py` → bounded task queue  
-- `memory.py` → task history store with metadata  
-- `drift.py` → multi-level drift detection  
-- `critic.py` → evaluation with consensus & verification  
-- `prediction.py` → pure prediction generation  
-- `task_generation.py` → pure subtask generation  
-- `execution.py` → execution seam (LLM-first, tool-extensible)
+- **agent.py** — control loop orchestration & policy enforcement  
+- **config.py** — immutable configuration & policy thresholds  
+- **task.py** — canonical task lifecycle states  
+- **queue.py** — bounded task queue  
+- **memory.py** — append-only task history  
+- **prediction.py** — pure prediction generation  
+- **task_generation.py** — pure subtask generation  
+- **execution.py** — execution seam  
+- **critic.py** — outcome evaluation  
+- **drift.py** — drift & instability detection  
+- **utils.py** — safe helpers (parsing, feasibility checks, scoring)  
+- **prompts.py** — centralised prompt templates  
 
-**Examples (`examples/`)**  
-- `basic_run.py` → minimal runnable demo with dummy LLM  
-- `openai_run.py` → minimal real LLM integration example (OpenAI; API key required)
-
-**Note**  
-EBA Core does **not** deduplicate tasks by text, allowing repetition when the agent judges it useful.
+---
 
 ## Dependencies
 
-EBA Core is designed with **minimal runtime dependencies**.
+ECK intentionally relies almost entirely on the **Python standard library**.
 
-Core modules currently rely primarily on the Python standard library, with optional lightweight packages used for planned or experimental features. Full list in `pyproject.toml`.
+Additional dependencies may be introduced **only** when they provide:
 
-Note: Additional dependencies may be introduced in future releases to support embeddings, tool execution, or external memory backends.
+- clear epistemic value
+- testable behaviour
+- no hidden control flow
 
-## Acknowledgements
-
-This project has been developed with the assistance of AI-based coding tools.
-All design decisions and final implementations are reviewed and owned by the maintainer.
+---
 
 ## License
 
-MIT License — see the LICENSE file for details.
+MIT License — see the `LICENSE` file for details.
+"```"
