@@ -1,8 +1,8 @@
 [project]
-name = "eck"
+name = "epistemic-control-kernel"
 dynamic = ["version"]
 description = "Epistemic Control Kernel: A model-agnostic reliability layer for reasoning systems with explicit confidence, drift, and policy control"
-keywords = ["epistemic-control", "reliability-kernel", "policy-gating", "uncertainty-awareness", "self-regulation"]
+keywords = ["epistemic-control", "reliability-kernel", "policy-gating", "uncertainty-awareness", "self-regulation", "agent-safety", "drift-detection",  "reasoning-governance"]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
