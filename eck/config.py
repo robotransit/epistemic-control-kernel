@@ -23,7 +23,7 @@ class ECKConfig:
     Central configuration for ECK (Epistemic Control Kernel).
     All thresholds, limits, and policy overrides are defined here.
 
-    Consumers **must** use effective_policy(); direct access to _conservative_* fields is not policy-aware.
+    Consumers **must** use effective_policy(); direct access to _guided_* fields is not policy-aware.
     """
 
     # Existing public fields (abbreviated)
@@ -42,9 +42,9 @@ class ECKConfig:
     policy_mode: PolicyMode = PolicyMode.NORMAL
 
     # Private: policy effect parameters (resolved via effective_policy())
-    _conservative_max_subtasks: int = 2
-    _conservative_critic_strictness: float = 0.9
-    _conservative_prediction_bias_delta: float = -0.2
+    _guided_max_subtasks: int = 2
+    _guided_critic_strictness: float = 0.9
+    _guided_prediction_bias_delta: float = -0.2
 
     # Memory influence (retrieval for prediction context)
     enable_memory_retrieval: bool = False
@@ -68,11 +68,11 @@ class ECKConfig:
         if self.policy_mode == PolicyMode.NORMAL:
             return MappingProxyType({})
 
-        if self.policy_mode == PolicyMode.CONSERVATIVE:
+        if self.policy_mode == PolicyMode.GUIDED:
             return MappingProxyType({
-                "max_subtasks": self._conservative_max_subtasks,
-                "critic_strictness": self._conservative_critic_strictness,
-                "prediction_bias_delta": self._conservative_prediction_bias_delta,
+                "max_subtasks": self._guided_max_subtasks,
+                "critic_strictness": self._guided_critic_strictness,
+                "prediction_bias_delta": self._guided_prediction_bias_delta,
             })
 
         if self.policy_mode == PolicyMode.HALT:
