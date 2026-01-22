@@ -1,6 +1,6 @@
-# EBA Confidence Definition
+# ECK Confidence Definition
 
-EBA's confidence is the system's belief that its current epistemic trajectory is safe to continue without forced expansion (breadth increase, alternative hypothesis generation, or deferral).
+ECK's confidence is the system's belief that its current epistemic trajectory is safe to continue without forced expansion (breadth increase, alternative hypothesis generation, or deferral).
 
 ## Confidence Defined
 
@@ -56,4 +56,4 @@ Confidence does not operate at token level
 
 This document defines semantics only; it does not prescribe a specific computation or update rule.
 
-See also: EBA Confidence vs LLM Uncertainty for how this differs from LLM internals.
+See also: ECK Confidence vs LLM Uncertainty for how this differs from LLM internals.
