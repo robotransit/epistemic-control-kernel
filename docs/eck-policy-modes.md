@@ -1,4 +1,4 @@
-# EBA Policy Modes
+# ECK Policy Modes
 
 ## 1. Purpose of Policy
 
@@ -12,7 +12,7 @@ Non-goal: Policy does not decide truth, correctness, or safety.
 
 ## 2. Separation of Concerns
 
-EBA explicitly separates layers:
+ECK explicitly separates layers:
 
 - Memory → stores and scores past experience  
 - Confidence → summarizes epistemic risk  
