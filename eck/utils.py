@@ -6,7 +6,7 @@ from typing import List, Any, Dict
 
 from .config import PolicyMode, ECKConfig
 
-logger = logging.getLogger("eck")
+logger = logging.getLogger("eck-core")
 
 
 def generate_id() -> str:
