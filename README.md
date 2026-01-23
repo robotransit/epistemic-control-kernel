@@ -101,7 +101,7 @@ When recommended breadth is DEFERRED, generation and execution are skipped for t
 
 - Enforcement is minimal, reversible, and fully logged  
 - See Commit 4c for implementation details  
-- See tests/scratch_test_4c.py for a minimal proof-of-concept run demonstrating deferral  
+- See scratch_test_4c.py for a minimal proof-of-concept run demonstrating deferral  
 
 This completes the core reliability loop within ECK: detection → recommendation → consequence.
 
