@@ -96,7 +96,7 @@ This architecture allows ECK to integrate with **any LLM stack** without inherit
 
 ## Policy Enforcement
 
-EBA can now enforce recommendations in ENFORCED mode across both subtask generation and task execution.  
+ECK can now enforce recommendations in ENFORCED mode across both subtask generation and task execution.  
 When recommended breadth is DEFERRED, generation and execution are skipped for the cycle.  
 
 - Enforcement is minimal, reversible, and fully logged  
