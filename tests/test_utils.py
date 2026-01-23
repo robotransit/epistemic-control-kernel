@@ -2,8 +2,8 @@
 import pytest
 import logging
 
-from eba.utils import get_recommended_breadth
-from eba.config import PolicyMode
+from eck.utils import get_recommended_breadth
+from eck.config import PolicyMode
 
 def test_get_recommended_breadth_normal_mode():
     # NORMAL mode must always return FULL (no influence)
@@ -43,5 +43,5 @@ def test_get_recommended_breadth_logging_observability(caplog):
     assert len(caplog.records) > 0  # At least one log record emitted
     record = caplog.records[-1]  # Latest record
     assert record.levelno == logging.INFO
-    assert record.name == "eba-core"
+    assert record.name == "eck-core"
   ```
