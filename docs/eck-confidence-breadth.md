@@ -4,7 +4,7 @@ This document defines how confidence influences breadth defaults — semantics o
 
 ## Confidence Defined
 
-Confidence ∈ [0, 1] (see docs/eba-confidence.md)
+Confidence ∈ [0, 1] (see docs/eck-confidence.md)
 
 Breadth defaults are soft guidance only and apply exclusively in GUIDED mode (NORMAL is unaffected).  
 In ENFORCED mode, breadth may be hard-constrained.
