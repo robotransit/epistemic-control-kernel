@@ -10,10 +10,10 @@ It does **not** enforce, constrain, or alter generation behavior.
 
 Commit 4b introduces:
 
-- Consumption of rolling confidence as an epistemic signal (see eba-rolling-confidence-semantics.md)  
-- Asymmetric failure weighting (see appendix/eba-confidence-failure-asymmetry.md)  
-- Observability guarantees (see eba-confidence-observability.md)  
-- Translation from confidence to recommended breadth level (see eba-confidence-breadth.md)  
+- Consumption of rolling confidence as an epistemic signal (see eck-rolling-confidence-semantics.md)  
+- Asymmetric failure weighting (see appendix/eck-confidence-failure-asymmetry.md)  
+- Observability guarantees (see eck-confidence-observability.md)  
+- Translation from confidence to recommended breadth level (see eck-confidence-breadth.md)  
 
 All of the above are **declarative semantics** — no enforcement, no side effects.
 
