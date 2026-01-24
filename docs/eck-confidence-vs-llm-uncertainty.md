@@ -27,7 +27,7 @@ It estimates the **risk of continuing the current epistemic trajectory** without
 
 Key differences:
 
-| Aspect                        | LLM Uncertainty                          | EBA Confidence                                   |
+| Aspect                        | LLM Uncertainty                          | ECK Confidence                                   |
 |-------------------------------|------------------------------------------|--------------------------------------------------|
 | Layer                         | Token / generation                       | Task / trajectory / strategy                     |
 | Nature                        | Probabilistic / statistical              | Epistemic / risk-based                           |
