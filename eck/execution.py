@@ -15,7 +15,7 @@ def _safe_eval(expr: str) -> float:
     """Safely evaluate a simple arithmetic expression using ast."""
     try:
         node = ast.parse(expr.strip(), mode="eval")
-        if not isinstance(node.body, ast.Expression):
+        if not isinstance(node, ast.Expression):
             raise ValueError("Invalid expression")
 
         def _eval(n):
@@ -64,3 +64,4 @@ def execute_task(
 
     # Normalize internal whitespace (symmetry with prediction/task gen)
     return ' '.join(outcome.split())
+
