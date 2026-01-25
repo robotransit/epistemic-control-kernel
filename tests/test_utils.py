@@ -1,4 +1,3 @@
-```
 import pytest
 import logging
 
@@ -44,4 +43,3 @@ def test_get_recommended_breadth_logging_observability(caplog):
     record = caplog.records[-1]  # Latest record
     assert record.levelno == logging.INFO
     assert record.name == "eck-core"
-  ```
