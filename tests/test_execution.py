@@ -16,6 +16,27 @@ def test_execute_task_with_calculator_tool_success():
     assert outcome == "Calculation result: 5"  # Exact success
 
 
+def test_execute_task_with_calculator_tool_case_insensitive_trigger():
+    outcome = execute_task("calc: 2 + 3", dummy_llm, use_tools=True)
+    assert outcome == "Calculation result: 5"
+
+
+def test_execute_task_with_calculator_tool_leading_trailing_spaces():
+    outcome = execute_task("  CALC: 2 + 3  ", dummy_llm, use_tools=True)
+    assert outcome == "Calculation result: 5"
+
+
+def test_execute_task_with_calculator_power_operator():
+    outcome = execute_task("CALC: 2 ** 3", dummy_llm, use_tools=True)
+    assert outcome == "Calculation result: 8"
+
+
+def test_execute_task_with_calculator_disallowed_operator_fails():
+    # '//' is ast.FloorDiv which is not in _ALLOWED_OPERATORS
+    outcome = execute_task("CALC: 2 // 3", dummy_llm, use_tools=True)
+    assert outcome == "Calculation failed (invalid expression)"
+
+
 def test_execute_task_with_calculator_error_div_zero():
     outcome = execute_task("CALC: 1 / 0", dummy_llm, use_tools=True)
     assert outcome == "Calculation failed (invalid expression)"  # Exact failure
