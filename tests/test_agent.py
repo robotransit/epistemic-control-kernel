@@ -40,6 +40,7 @@ def test_enforced_deferred_no_execution_no_subtasks(agent, monkeypatch):
         assert breadth == "DEFERRED", "should_execute did not receive DEFERRED"
         assert policy_mode == PolicyMode.ENFORCED, "should_execute did not receive ENFORCED policy mode"
         return False
+
     monkeypatch.setattr(agent_mod, "should_execute", assert_deferred_and_false)
 
     # Raise if execute_task or generate_subtasks called
@@ -132,3 +133,39 @@ def test_policy_mode_upgrades_are_irreversible(monkeypatch):
     assert agent.step() is True
     # Must NOT downgrade back to NORMAL
     assert agent.current_policy_mode == PolicyMode.ENFORCED
+
+
+def test_goal_check_yes_stops_step_early(monkeypatch):
+    """If the goal-check prompt returns YES, step() stops early (returns False)."""
+    import eck.agent as agent_mod
+
+    seen = {"goal_check_prompt": False}
+
+    def goal_yes_llm(prompt: str) -> str:
+        # Match exact phrase from GOAL_ACHIEVED_PROMPT
+        if "Answer ONLY \"YES\" or \"NO\"" in prompt:
+            seen["goal_check_prompt"] = True
+            # Prove this is the goal-check prompt (injected fields)
+            assert "Objective: Test objective" in prompt
+            assert "Latest result: outcome" in prompt
+            return "YES"
+        return "NO"
+
+    a = ECKAgent(
+        objective="Test objective",
+        llm_call=goal_yes_llm,
+        config=ECKConfig(policy_mode=PolicyMode.NORMAL),
+    )
+
+    # Keep the step deterministic and avoid other early exits
+    monkeypatch.setattr(a.drift, "get_policy_mode", lambda: PolicyMode.NORMAL)
+    monkeypatch.setattr(agent_mod, "generate_prediction", lambda *a, **k: "pred")
+    monkeypatch.setattr(agent_mod, "get_recommended_breadth", lambda *a, **k: "FULL")
+    monkeypatch.setattr(agent_mod, "should_execute", lambda *a, **k: True)
+    monkeypatch.setattr(agent_mod, "execute_task", lambda *a, **k: "outcome")
+    monkeypatch.setattr(agent_mod, "critic_evaluate", lambda *a, **k: (True, "ok", 0.0))
+    monkeypatch.setattr(agent_mod, "generate_subtasks", lambda *a, **k: [])
+
+    a.seed("Seed task")
+    assert a.step() is False  # stops due to goal check YES
+    assert seen["goal_check_prompt"] is True
